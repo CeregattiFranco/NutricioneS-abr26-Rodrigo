@@ -1,9 +1,10 @@
 from dataclasses import dataclass
+from nutriciones.models.primary_key import PrimaryKey, WithPrimaryKeyProperty
 
 @dataclass
-class PlanoAlimentar:
-    plano_id: str
-    cns_id: str
+class PlanoAlimentar(WithPrimaryKeyProperty):
+    plano_id: PrimaryKey
+    pct_id: str
     data: str
     total_kcal: float
     total_proteina: float

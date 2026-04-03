@@ -60,43 +60,42 @@ def calcular_refeicao(itens_refeicao: list[ItemRefeicaoInput]) -> TotaisRefeicao
         
     return totais
 
+from nutriciones.services.google.sheets.base import inserir_lista_recursos, inserir_recurso, sheet_name_of_resource_type
+from nutriciones.services.google.sheets.types import PedidoInsercaoListaRecursos, PedidoInsercaoRecurso
+from nutriciones.services.google.sheets.serializers.dieta import serialize_plano
+
 def salvar_plano_alimentar(planos: list[PlanoAlimentar]):
     """
-    Usa o auth_service para assegurar os cabeçalhos em A1 e dar um append dos Planos Alimentares persistidos na aba db_planosAlimentares
+    Persiste os Planos Alimentares na SSoT e atualiza o cache de índices.
     """
     if not planos:
         return
         
-    service = get_ssot_sheets_service()
-    aba = "db_planosAlimentares"
+    spreadsheet_name = sheet_name_of_resource_type[PlanoAlimentar]
     
-    headers = [
-        "plano_id", "cns_id", "data", "total_kcal", 
-        "total_proteina", "total_carboidrato", "total_lipidios", "itens_detalhados"
-    ]
-    service.spreadsheets().values().update(
-        spreadsheetId=config.GOOGLE_SHEET_ID_CARDAPIO,
-        range=f"{aba}!A1",
-        valueInputOption="USER_ENTERED",
-        body={"values": [headers]}
-    ).execute()
-    logger.info(f"Cabeçalhos garantidos e atualizados na aba {aba}!")
-    
-    rows_data = [list(astuple(plano)) for plano in planos]
-    body = {
-        "values": rows_data
-    }
-    
-    logger.info(f"Executando Persistência na SSoT. Inserindo {len(planos)} dias de plano para Consulta: {planos[0].cns_id}...")
+    logger.info(f"Executando Persistência na SSoT. Inserindo {len(planos)} dias de plano para Consulta: {planos[0].pct_id}...")
     
     try:
-        result = service.spreadsheets().values().append(
-            spreadsheetId=config.GOOGLE_SHEET_ID_CARDAPIO,
-            range=f"{aba}!A:H",
-            valueInputOption="USER_ENTERED",
-            body=body
-        ).execute()
-        logger.info(f"Salvo com sucesso na aba {aba}! Updates: {result.get('updates', {}).get('updatedCells')} células alteradas.")
+        # Se desejar inserir um a um como o CTO exemplificou, usamos loop:
+        # for plano in planos:
+        #     inserir_recurso(PedidoInsercaoRecurso(
+        #         spreadsheet_id=config.GoogleServices.sheet_id_cardapio,
+        #         spreadsheet_name=spreadsheet_name,
+        #         recurso=plano,
+        #         serialize=serialize_plano
+        #     ))
+        
+        # Inserção em batch (melhor performance):
+        request = PedidoInsercaoListaRecursos(
+            spreadsheet_id=config.GoogleServices.sheet_id_cardapio,
+            spreadsheet_name=spreadsheet_name,
+            recursos=planos,
+            serialize=serialize_plano
+        )
+        
+        range_inserido = inserir_lista_recursos(request)
+        logger.info(f"Salvo e indexado com sucesso na aba {spreadsheet_name}! Range: {range_inserido.raw}")
+        
     except Exception as e:
-        logger.error(f"Erro fatal ao executar Append do Plano Alimentar na aba {aba}: {e}")
+        logger.error(f"Erro fatal ao executar Inserção do Plano Alimentar na aba {spreadsheet_name}: {e}")
         raise e

@@ -10,7 +10,7 @@ from nutriciones.services.google.drive import find_patient_folder
 
 logger = logging.getLogger(__name__)
 
-def gerar_pdf_plano_semanal(cns_id: str, resumo_semana: dict, planos_diarios: list[dict]) -> str:
+def gerar_pdf_plano_semanal(pct_id: str, resumo_semana: dict, planos_diarios: list[dict]) -> str:
     """
     Duplica o Doc Template, substitui chaves mestre, exporta em PDF 
     e envia pra dentro do folder do paciente baseado no CNS_ID.
@@ -67,8 +67,8 @@ def gerar_pdf_plano_semanal(cns_id: str, resumo_semana: dict, planos_diarios: li
     logger.info("Refletindo Placeholders no Banco Text-to-Doc...")
     docs_service.documents().batchUpdate(documentId=doc_id, body={'requests': requests}).execute()
     
-    # 4. Buscando Pasta do Paciente Através do cns_id
-    folder_id = find_patient_folder(cns_id)
+    # 4. Buscando Pasta do Paciente Através do pct_id
+    folder_id = find_patient_folder(pct_id)
     parents = [folder_id] if folder_id else []
         
     # 5. Exportar do Google Docs para Bytestream em formato PDF
