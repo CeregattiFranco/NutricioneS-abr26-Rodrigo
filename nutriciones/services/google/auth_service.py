@@ -1,75 +1,82 @@
+from pathlib import Path
 import logging
-from google.oauth2 import service_account
+from typing import Any, Literal
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials as OAuthCreds
+from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-
 from nutriciones.core import config
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Scopes updated to include both Rebirth's needs and current project's needs (docs, sheets, drive)
 SCOPES = [
-    'https://www.googleapis.com/auth/spreadsheets',
+    'https://www.googleapis.com/auth/calendar',
     'https://www.googleapis.com/auth/drive',
+    'https://www.googleapis.com/auth/drive.appdata',
+    'https://www.googleapis.com/auth/drive.file',
+    'https://www.googleapis.com/auth/gmail.compose',
+    'https://www.googleapis.com/auth/gmail.readonly',
+    'https://www.googleapis.com/auth/spreadsheets',
     'https://www.googleapis.com/auth/documents'
 ]
 
-def get_service_account_creds() -> service_account.Credentials:
-    """
-    Carrega as variáveis do config e retorna as credenciais da Service Account.
-    """
-    private_key = config.GOOGLE_PRIVATE_KEY.replace('\\n', '\n')
-    
-    info = {
-        'client_email': config.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        'private_key': private_key,
-        'token_uri': 'https://oauth2.googleapis.com/token'
-    }
-    
-    try:
-        creds = service_account.Credentials.from_service_account_info(
-            info,
-            scopes=SCOPES
-        )
-        logger.info("Credenciais da Service Account carregadas com sucesso.")
-        return creds
-    except Exception as e:
-        logger.error(f"Erro ao gerar credenciais da Service Account: {e}")
-        raise
+_creds = None
+
+def get_creds() -> OAuthCreds:
+    global _creds
+    if _creds:
+        return _creds
+
+    creds = None
+    token_path = config.BASE_DIR / 'token.json'
+    credentials_path = config.BASE_DIR / 'credentials.json'
+
+    if token_path.exists():
+        creds = OAuthCreds.from_authorized_user_file(str(token_path), SCOPES)
+
+    if creds:
+        if not creds.expired:
+            _creds = creds
+            logger.info("Credenciais OAuth carregadas do token.json.")
+            return creds
+        elif creds.refresh_token:
+            try:
+                creds.refresh(Request())
+                _creds = creds
+                logger.info("Credenciais OAuth atualizadas (refresh).")
+                return creds
+            except Exception as e:
+                logger.warning(f"Erro no refresh token: {e}")
+                pass
+
+    logger.info("Iniciando fluxo de autenticação OAuth...")
+    if not credentials_path.exists():
+        logger.error(f"Erro fatal de permissão/auth: {credentials_path} inacessível.")
+        raise FileNotFoundError(f"Coloque seu credentials.json em {config.BASE_DIR}")
+        
+    flow = InstalledAppFlow.from_client_secrets_file(
+        str(credentials_path), SCOPES)
+    creds = flow.run_local_server(port=0)
+
+    with open(token_path, 'w') as token:
+        token.write(creds.to_json())
+
+    _creds = creds
+    logger.info("Novas credenciais OAuth geradas e salvas em token.json.")
+    return creds
 
 def get_ssot_sheets_service():
-    """
-    Retorna o client (service) da API do Google Sheets (v4) autenticado.
-    """
-    creds = get_service_account_creds()
-    try:
-        service = build('sheets', 'v4', credentials=creds)
-        return service
-    except Exception as e:
-        logger.error(f"Erro ao inicializar o serviço do Google Sheets: {e}")
-        raise
+    """Retorna o client (service) da API do Google Sheets (v4) autenticado."""
+    creds = get_creds()
+    return build('sheets', 'v4', credentials=creds)
 
 def get_drive_service():
-    """
-    Retorna o client (service) da API do Google Drive (v3) autenticado.
-    """
-    creds = get_service_account_creds()
-    try:
-        service = build('drive', 'v3', credentials=creds)
-        logger.info("Serviço do Google Drive v3 inicializado com sucesso.")
-        return service
-    except Exception as e:
-        logger.error(f"Erro ao inicializar o serviço do Google Drive: {e}")
-        raise
+    """Retorna o client (service) da API do Google Drive (v3) autenticado."""
+    creds = get_creds()
+    return build('drive', 'v3', credentials=creds)
 
 def get_docs_service():
-    """
-    Retorna o client (service) da API do Google Docs (v1) autenticado.
-    """
-    creds = get_service_account_creds()
-    try:
-        service = build('docs', 'v1', credentials=creds)
-        logger.info("Serviço do Google Docs v1 inicializado com sucesso.")
-        return service
-    except Exception as e:
-        logger.error(f"Erro ao inicializar o serviço do Google Docs: {e}")
-        raise
+    """Retorna o client (service) da API do Google Docs (v1) autenticado."""
+    creds = get_creds()
+    return build('docs', 'v1', credentials=creds)

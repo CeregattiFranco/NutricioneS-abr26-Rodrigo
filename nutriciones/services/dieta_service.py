@@ -6,7 +6,7 @@ from dataclasses import astuple
 from nutriciones.core import config
 from nutriciones.services.google.auth_service import get_ssot_sheets_service
 from nutriciones.models.planos import PlanoAlimentar, ItemRefeicaoInput, MacroResult, TotaisRefeicao
-from nutriciones.services.sqlite_service import get_alimento_exato
+from nutriciones.services.sqlite import get_alimento_exato
 
 logger = logging.getLogger(__name__)
 

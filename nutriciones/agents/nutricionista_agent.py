@@ -3,7 +3,7 @@ from crewai import Agent
 from crewai.tools import tool
 
 from nutriciones.services.dieta_service import calcular_refeicao
-from nutriciones.services.sqlite_service import pesquisar_alimento_nome
+from nutriciones.services.sqlite import pesquisar_alimento_nome
 from nutriciones.models.planos import ItemRefeicaoInput
 
 @tool("Pesquisar Alimentos SSoT")

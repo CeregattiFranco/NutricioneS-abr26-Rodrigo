@@ -23,7 +23,7 @@ def gerar_pdf_plano_semanal(cns_id: str, resumo_semana: dict, planos_diarios: li
     {{lipidios}}
     {{itens}} - Agora vai renderizar o quadro completo dos 7 dias organizados.
     """
-    template_id = config.GOOGLE_DOC_TEMPLATE_ID
+    template_id = config.GoogleServices.doc_template_id
     if not template_id:
         raise ValueError("Variável GOOGLE_DOC_TEMPLATE_ID ausente no config/env.")
         
