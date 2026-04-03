@@ -138,14 +138,15 @@ def refresh_indices(sheet_id: str = core.config.GoogleServices.sheet_id_cardapio
         except IndexError:
             last_column = 'A'
 
-        request = google.sheets.PedidoListagemRecursos(
+        from nutriciones.services.google.sheets import types, base
+        request = types.PedidoListagemRecursos(
             spreadsheet_id=sheet_id,
-            spreadsheet_name=google.sheets.sheet_name_of_resource_type[resource_type],
+            spreadsheet_name=base.sheet_name_of_resource_type[resource_type],
             spreadsheet_range=f"A2:{last_column}",
             deserialize=_deserialize_id_columns
         )
 
-        resource_list, range = google.sheets.listar_recursos(request)
+        resource_list, range = base.listar_recursos(request)
 
         # Map each row to its primary key and handle foreign key relationships
         for i, res in enumerate(resource_list, start=range.row_start):

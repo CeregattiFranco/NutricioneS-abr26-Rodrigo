@@ -40,7 +40,7 @@ class PedidoAtualizacaoRecurso[R](SheetsRequestBase):
 
 # sheet_name!A1:Z1000
 _a1_notation_pattern = re.compile(
-    r"^(?P<sheet_name>[a-z_]+)"
+    r"^(?P<sheet_name>[a-zA-Z_]+)"
     r"!(?P<column_start>[A-Z]+)(?P<row_start>\d+)"  # range start
     r":(?P<column_end>[A-Z]+)(?P<row_end>\d*)$"  # range end
 )

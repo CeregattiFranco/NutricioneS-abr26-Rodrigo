@@ -11,6 +11,7 @@ class PlanoAlimentar(WithPrimaryKeyProperty):
     total_carboidrato: float
     total_lipidios: float
     itens_detalhados: str # Formatado em texto/JSON
+    cns_id: str | None = None
 
 @dataclass
 class ItemRefeicaoInput:

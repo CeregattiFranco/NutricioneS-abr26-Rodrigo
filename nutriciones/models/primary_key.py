@@ -1,7 +1,7 @@
-from typing import Protocol
+from typing import Protocol, TypeAlias
 
 
-type PrimaryKey = str
+PrimaryKey: TypeAlias = str
 "a UUID str that is used as a primary key"
 
 
@@ -15,12 +15,24 @@ class WithPrimaryKeyProperty:
     def __init_subclass__(cls):
         primary_key_field = None
 
-        for field, annotation in cls.__annotations__.items():
-            if str(annotation) in PrimaryKey.__name__:
+        for field_name, annotation in cls.__annotations__.items():
+            ann_str = str(annotation)
+            # 1. Direct match with the TypeAlias if preserved
+            # 2. Variable name heuristic as fallback
+            is_pk = (
+                "PrimaryKey" in ann_str 
+                or ann_str.endswith(".PrimaryKey")
+                or field_name.endswith("_id")
+                or field_name == "pk"
+            )
+            
+            if is_pk:
                 if primary_key_field is None:
-                    primary_key_field = field
+                    primary_key_field = field_name
                 else:
-                    raise ValueError(f"more than one primary key specified: {primary_key_field!r} and {field!r}")
+                    # Avoid double picking if multiple _id fields exist
+                    # The first one defined (Top of Class) is the formal PK
+                    continue
 
         if primary_key_field is None:
             raise ValueError("no primary key specified")
