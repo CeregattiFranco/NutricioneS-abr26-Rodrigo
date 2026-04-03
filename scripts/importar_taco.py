@@ -1,15 +1,15 @@
-import os
 import sys
 import uuid
 import json
 import logging
 from dataclasses import dataclass, astuple
-from dotenv import load_dotenv
+from pathlib import Path
 
 # Adiciona o diretório principal ao sys.path para conseguirmos importar o modulo `nutriciones`
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(str(Path(__file__).parent.parent.resolve()))
 
 from nutriciones.services.google.auth_service import get_ssot_sheets_service
+from nutriciones.core import config
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -40,12 +40,10 @@ def transform_food_data(json_data: list) -> list[list]:
         try:
             nome = item.get("description", "Sem Nome")
             
-            # Categoria vem como string direta
             grupo = item.get("category", "Sem Grupo")
             if not isinstance(grupo, str) or not grupo:
                 grupo = "Sem Grupo"
             
-            # Nutrientes vêm com chaves simples direto na raiz do dict local
             kcal = extract_nutrient_value(item.get("energy_kcal"))
             proteina = extract_nutrient_value(item.get("protein_g"))
             lipidios = extract_nutrient_value(item.get("lipid_g"))
@@ -67,25 +65,17 @@ def transform_food_data(json_data: list) -> list[list]:
             
     return rows
 
-def load_taco_data_from_file(file_path: str = "data/taco.json") -> list:
+def load_taco_data_from_file() -> list:
     """Lê o arquivo JSON local contendo os dados da TACO."""
-    logger.info(f"Carregando dados locais do arquivo: {file_path}")
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    full_path = os.path.join(base_dir, file_path)
+    logger.info(f"Carregando dados locais do arquivo: {config.TACO_JSON_PATH}")
     
-    with open(full_path, "r", encoding="utf-8") as f:
+    with open(config.TACO_JSON_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
 
 def export_to_sheets(rows: list[list]):
     """Envia o bulk das linhas transacionadas para a planilha, incluindo cabeçalhos."""
-    load_dotenv()
-    sheet_id = os.getenv("GOOGLE_SHEET_ID_CARDAPIO")
-    if not sheet_id:
-        raise ValueError("Variável GOOGLE_SHEET_ID_CARDAPIO não encontrada no .env")
-        
     service = get_ssot_sheets_service()
     
-    # Define os cabeçalhos das colunas
     headers = [
         "id_alimento", 
         "nome", 
@@ -96,24 +86,18 @@ def export_to_sheets(rows: list[list]):
         "carboidratos_g"
     ]
     
-    # Anexa os cabeçalhos no começo da lista
     final_rows = [headers] + rows
+    body = {"values": final_rows}
     
-    body = {
-        "values": final_rows
-    }
-    
-    # Limpa a aba para não acumular duplicatas caso o script seja rodado duas vezes
     logger.info("Limpando dados antigos da aba db_alimentos!A:G...")
     service.spreadsheets().values().clear(
-        spreadsheetId=sheet_id,
+        spreadsheetId=config.GOOGLE_SHEET_ID_CARDAPIO,
         range="db_alimentos!A:G"
     ).execute()
     
     logger.info(f"Exportando {len(final_rows)} linhas (incluindo cabeçalho) para o Sheets...")
-    # Usando o .update na A1 garante que as informações comecem rigorosamente no topo
     result = service.spreadsheets().values().update(
-        spreadsheetId=sheet_id,
+        spreadsheetId=config.GOOGLE_SHEET_ID_CARDAPIO,
         range="db_alimentos!A1",
         valueInputOption="USER_ENTERED",
         body=body
@@ -123,7 +107,7 @@ def export_to_sheets(rows: list[list]):
 
 def main():
     try:
-        data = load_taco_data_from_file("data/taco.json")
+        data = load_taco_data_from_file()
         rows = transform_food_data(data)
         if rows:
             export_to_sheets(rows)

@@ -1,14 +1,12 @@
-import os
 import logging
-from dotenv import load_dotenv
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
-# Configuração simples de logging
+from nutriciones.core import config
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Configura o escopo expansivo para múltiplas APIs do Google
 SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
     'https://www.googleapis.com/auth/drive',
@@ -17,24 +15,12 @@ SCOPES = [
 
 def get_service_account_creds() -> service_account.Credentials:
     """
-    Carrega as variáveis do .env e retorna as credenciais da Service Account.
+    Carrega as variáveis do config e retorna as credenciais da Service Account.
     """
-    # Carrega as variáveis do arquivo .env
-    load_dotenv()
+    private_key = config.GOOGLE_PRIVATE_KEY.replace('\\n', '\n')
     
-    email = os.getenv('GOOGLE_SERVICE_ACCOUNT_EMAIL')
-    private_key = os.getenv('GOOGLE_PRIVATE_KEY')
-    
-    if not email or not private_key:
-        logger.error("Credenciais da Service Account não encontradas no arquivo .env.")
-        raise ValueError("Variáveis GOOGLE_SERVICE_ACCOUNT_EMAIL ou GOOGLE_PRIVATE_KEY ausentes.")
-    
-    # Tratamento da chave privada que pode ter as quebras de linha escapadas
-    private_key = private_key.replace('\\n', '\n')
-    
-    # Cria o dicionário mínimo necessário para autenticação
     info = {
-        'client_email': email,
+        'client_email': config.GOOGLE_SERVICE_ACCOUNT_EMAIL,
         'private_key': private_key,
         'token_uri': 'https://oauth2.googleapis.com/token'
     }

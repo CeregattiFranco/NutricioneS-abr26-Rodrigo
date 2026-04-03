@@ -1,11 +1,10 @@
-import os
 import io
 import json
 import logging
 import datetime
-from dotenv import load_dotenv
 
 from googleapiclient.http import MediaIoBaseUpload
+from nutriciones.core import config
 from nutriciones.services.google.auth_service import get_docs_service, get_drive_service
 from nutriciones.services.google.drive import find_patient_folder
 
@@ -24,10 +23,9 @@ def gerar_pdf_plano_semanal(cns_id: str, resumo_semana: dict, planos_diarios: li
     {{lipidios}}
     {{itens}} - Agora vai renderizar o quadro completo dos 7 dias organizados.
     """
-    load_dotenv()
-    template_id = os.getenv("GOOGLE_DOC_TEMPLATE_ID")
+    template_id = config.GOOGLE_DOC_TEMPLATE_ID
     if not template_id:
-        raise ValueError("Variável GOOGLE_DOC_TEMPLATE_ID ausente no .env.")
+        raise ValueError("Variável GOOGLE_DOC_TEMPLATE_ID ausente no config/env.")
         
     drive_service = get_drive_service()
     docs_service = get_docs_service()

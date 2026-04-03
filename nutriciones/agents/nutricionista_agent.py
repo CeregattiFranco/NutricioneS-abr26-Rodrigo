@@ -2,13 +2,15 @@ import json
 from crewai import Agent
 from crewai.tools import tool
 
-from nutriciones.services.dieta_service import calcular_refeicao, fetch_alimentos_from_sheet
+from nutriciones.services.dieta_service import calcular_refeicao
+from nutriciones.services.sqlite_service import pesquisar_alimento_nome
+from nutriciones.models.planos import ItemRefeicaoInput
 
 @tool("Pesquisar Alimentos SSoT")
 def pesquisar_alimentos_ssot(termo: str) -> str:
-    """Busque por APENAS UM ingrediente de cada vez para encontrar o NOME EXATO do alimento na base restrita TACO (Google Sheets) ANTES de calcular a refeição."""
-    alimentos = fetch_alimentos_from_sheet()
-    resultados = [item['nome'] for item in alimentos if termo.lower() in item.get('nome', '').lower()]
+    """Busque por APENAS UM ingrediente de cada vez para encontrar o NOME EXATO do alimento na base restrita TACO (SQLite) ANTES de calcular a refeição."""
+    alimentos = pesquisar_alimento_nome(termo)
+    resultados = [item.nome for item in alimentos]
     if not resultados:
         return f"Nenhum alimento encontrado com o termo '{termo}'. Tente nomes mais genéricos e unicos (ex: 'frango', 'arroz')."
     return f"Nomes Exatos encontrados na base: {', '.join(resultados[:15])}"
@@ -21,17 +23,17 @@ def calcular_macronutrientes_tool(itens_json_str: str) -> str:
     Retorna os macronutrientes totais da combinação.
     """
     try:
-        itens = json.loads(itens_json_str)
+        itens_raw = json.loads(itens_json_str)
+        itens = [ItemRefeicaoInput(**it) for it in itens_raw]
         resultado = calcular_refeicao(itens)
         
-        # Filtra os dados pro LLM não poluir sua janela de contexto
         return json.dumps({
-            "kcal_total": resultado["kcal"],
-            "proteina_total": resultado["proteina_g"],
-            "lipidios_total": resultado["lipidios_g"],
-            "carboidrato_total": resultado["carboidratos_g"],
-            "analise_por_item": [f"{it['nome']} ({it['peso_g']}g): {it['kcal']} kcal" for it in resultado["itens_analisados"]],
-            "erros_nao_encontrados": resultado["nao_encontrados"]
+            "kcal_total": resultado.kcal,
+            "proteina_total": resultado.proteina_g,
+            "lipidios_total": resultado.lipidios_g,
+            "carboidrato_total": resultado.carboidratos_g,
+            "analise_por_item": [f"{it.nome} ({it.peso_g}g): {it.kcal:.2f} kcal" for it in resultado.itens_analisados],
+            "erros_nao_encontrados": resultado.nao_encontrados
         }, ensure_ascii=False, indent=2)
     except Exception as e:
         return f"Erro ao processar as gramagens: {e}. Verifique o formato do JSON enviado (deve ser Array de Dicts)."

@@ -1,16 +1,15 @@
-import os
 import sys
-from dotenv import load_dotenv
+import os
+from pathlib import Path
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(str(Path(__file__).parent.parent.resolve()))
 
 from crewai import Task, Crew, Process
 from nutriciones.agents.nutricionista_agent import criar_agente_nutricionista
+from nutriciones.core import config
 
 def executar_plano_semanal():
-    load_dotenv()
-    
-    if "OPENAI_API_KEY" not in os.environ:
+    if not config.OPENAI_API_KEY:
         print("[AVISO]: Variável OPENAI_API_KEY ausente do seu .env. O CrewAI usará OpenAI default.")
 
     nutri_agent = criar_agente_nutricionista()
