@@ -5,11 +5,10 @@ from nutriciones.services.pacientes import embarcar_paciente
 from nutriciones.models.pacientes import Paciente
 
 @patch("nutriciones.services.pacientes.inserir_lista_recursos")
-@patch("nutriciones.services.pacientes.criar_pasta_paciente")
-@patch("nutriciones.services.pacientes.copiar_arquivos_iniciais_paciente")
-def test_embarque_paciente_flow(mock_copy, mock_folder, mock_insert):
+@patch("nutriciones.services.pacientes.find_patient_folder")
+def test_embarque_paciente_flow(mock_find, mock_insert):
     # Setup
-    mock_folder.return_value = "folder_123"
+    mock_find.return_value = "folder_123"
     
     # Execute
     pct_id = embarcar_paciente(
@@ -30,8 +29,7 @@ def test_embarque_paciente_flow(mock_copy, mock_folder, mock_insert):
     # Assert
     assert pct_id is not None
     assert mock_insert.call_count == 4 # Paciente, Telefone, Email, Endereco
-    mock_folder.assert_called_once()
-    mock_copy.assert_called_once_with("folder_123", "Teste")
+    mock_find.assert_called_once_with(pct_id, nome="Teste", sobrenome="Workflow")
     
     # Verifica se o primeiro insert foi o do Paciente
     args, kwargs = mock_insert.call_args_list[0]

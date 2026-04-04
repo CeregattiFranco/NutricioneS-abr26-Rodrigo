@@ -22,12 +22,12 @@ class TestImportLogic(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         row = rows[0]
         
-        # Dataclass AlimentoSQLiteBulk has 5 fields: nome, kcal, proteina_g, lipidios_g, carboidratos_g
-        self.assertEqual(row.nome, "Arroz, integral, cozido")
-        self.assertEqual(row.kcal, 124.5)
-        self.assertEqual(row.proteina_g, 2.58)
-        self.assertEqual(row.lipidios_g, 1.0)
-        self.assertEqual(row.carboidratos_g, 25.8)
+        # Tuple has 5 fields: (nome, kcal, proteina_g, lipidios_g, carboidratos_g)
+        self.assertEqual(row[0], "Arroz, integral, cozido")
+        self.assertEqual(row[1], 124.5)
+        self.assertEqual(row[2], 2.58)
+        self.assertEqual(row[3], 1.0)
+        self.assertEqual(row[4], 25.8)
 
     def test_transform_food_data_missing_and_null_fields(self):
         """Valida a tolerância de falhas para inputs ausentes, 'NA', '*', '' ou Nulos."""
@@ -47,11 +47,11 @@ class TestImportLogic(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         row = rows[0]
         
-        self.assertEqual(row.nome, "Alimento Misterioso")
-        self.assertEqual(row.kcal, 0.0) # None -> 0.0
-        self.assertEqual(row.proteina_g, 0.0) # "NA" -> 0.0
-        self.assertEqual(row.lipidios_g, 0.0) # "*" -> 0.0
-        self.assertEqual(row.carboidratos_g, 0.0) # "" -> 0.0
+        self.assertEqual(row[0], "Alimento Misterioso")
+        self.assertEqual(row[1], 0.0) # None -> 0.0
+        self.assertEqual(row[2], 0.0) # "NA" -> 0.0
+        self.assertEqual(row[3], 0.0) # "*" -> 0.0
+        self.assertEqual(row[4], 0.0) # "" -> 0.0
 
 if __name__ == '__main__':
     unittest.main()

@@ -14,14 +14,6 @@ from nutriciones.services.sqlite import get_connection
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-@dataclass
-class AlimentoSQLiteBulk:
-    nome: str
-    kcal: float
-    proteina_g: float
-    lipidios_g: float
-    carboidratos_g: float
-
 def extract_nutrient_value(val) -> float:
     if not val or val == 'NA' or val == '*':
         return 0.0
@@ -41,7 +33,7 @@ def load_taco_data_from_file() -> list:
     with open(config.TACO_JSON_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
 
-def transform_food_data(json_data: list) -> list[AlimentoSQLiteBulk]:
+def transform_food_data(json_data: list) -> list[tuple]:
     alimentos = []
     for item in json_data:
         try:
@@ -54,34 +46,24 @@ def transform_food_data(json_data: list) -> list[AlimentoSQLiteBulk]:
             lip = extract_nutrient_value(item.get("lipidios_g", item.get("lipid_g", 0)))
             carb = extract_nutrient_value(item.get("carboidratos_g", item.get("carbohydrate_g", 0)))
             
-            alimento = AlimentoSQLiteBulk(
-                nome=nome,
-                kcal=kcal,
-                proteina_g=prot,
-                lipidios_g=lip,
-                carboidratos_g=carb
-            )
-            alimentos.append(alimento)
+            alimentos.append((nome, kcal, prot, lip, carb))
         except Exception as e:
             logger.warning(f"Erro ao parsear alimento: {e}")
             continue
             
     return alimentos
 
-def bulk_insert_sqlite(alimentos: list[AlimentoSQLiteBulk]):
+def bulk_insert_sqlite(alimentos: list[tuple]):
     conn = get_connection()
     cursor = conn.cursor()
     
-    # Prepara a lista de tuplas ultra rápida baseada estritamente na DataClass iterável
-    rows = [astuple(a) for a in alimentos]
-    
-    logger.info(f"Preparando Bulk Insert (Lightning Fast \u26a1) de {len(rows)} itens...")
+    logger.info(f"Preparando Bulk Insert (Lightning Fast \u26a1) de {len(alimentos)} itens...")
     
     try:
         cursor.executemany('''
             INSERT OR IGNORE INTO alimentos (nome, kcal, proteina_g, lipidios_g, carboidratos_g)
             VALUES (?, ?, ?, ?, ?)
-        ''', rows)
+        ''', alimentos)
         conn.commit()
         logger.info(f"Sucesso! Banco SQLite local [{config.DB_PATH.name}] populado em bloco instantaneamente.")
     except Exception as e:

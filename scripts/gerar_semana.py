@@ -14,7 +14,7 @@ from nutriciones.agents.nutricionista_agent import criar_agente_nutricionista
 from nutriciones.models.planos import PlanoAlimentar
 from nutriciones.models.pacientes import Paciente
 from nutriciones.services.dieta_service import salvar_plano_alimentar
-from nutriciones.services.google.docs_service import gerar_pdf_plano_semanal
+from nutriciones.services.google.docs_service import criar_plano_alimentar_semanal
 from nutriciones.services.google.sheets.indices import get_indices
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
@@ -144,7 +144,13 @@ Retorne APENAS um Markdown de ```json e ``` contendo o array exato de 7 dias com
         "lipidios_media": round(total_lip_semana / dias, 1),
     }
     
-    pdf_id = gerar_pdf_plano_semanal(pct_id, resumo_semana=resumo_pdf, planos_diarios=lista_pdf)
+    pdf_id = criar_plano_alimentar_semanal(
+        pct_id=pct_id, 
+        resumo_semana=resumo_pdf, 
+        planos_diarios=lista_pdf,
+        nome_paciente="Paciente",
+        sobrenome_paciente="Teste"
+    )
     logger.info(f"✔ Script concluído com louvor! ID do PDF final no Drive: {pdf_id}")
 
 

@@ -8,20 +8,16 @@ from nutriciones.core import config
 from nutriciones.services.google.auth_service import get_docs_service, get_drive_service
 from nutriciones.services.google.drive import find_patient_folder
 
+from typing import TypeAlias
+
 logger = logging.getLogger(__name__)
 
-def gerar_pdf_plano_semanal(pct_id: str, resumo_semana: dict, planos_diarios: list[dict]) -> str:
+type GoogleDocIdStr = str
+
+def criar_plano_alimentar_semanal(pct_id: str, resumo_semana: dict, planos_diarios: list[dict], nome_paciente: str = "Paciente", sobrenome_paciente: str = "") -> GoogleDocIdStr:
     """
     Duplica o Doc Template, substitui chaves mestre, exporta em PDF 
-    e envia pra dentro do folder do paciente baseado no CNS_ID.
-    
-    Placeholder suportados no docs template:
-    {{data}}
-    {{kcal}}
-    {{proteina}}
-    {{carboidrato}}
-    {{lipidios}}
-    {{itens}} - Agora vai renderizar o quadro completo dos 7 dias organizados.
+    e envia obrigatoriamente para a pasta do paciente.
     """
     template_id = config.GoogleServices.doc_template_id
     if not template_id:
@@ -30,17 +26,16 @@ def gerar_pdf_plano_semanal(pct_id: str, resumo_semana: dict, planos_diarios: li
     drive_service = get_drive_service()
     docs_service = get_docs_service()
     
-    data_formatada = datetime.datetime.now().strftime("%d/%m/%Y")
-    nome_doc = f"Plano Alimentar Semanal - {data_formatada}"
+    data_formatada = datetime.datetime.now().strftime("%d-%m-%Y")
+    nome_doc_pdf = f"Plano_Alimentar_Semanal_{nome_paciente.replace(' ', '_')}_{data_formatada}.pdf"
     
     # 1. Duplica Template Original
-    logger.info(f"Gerando cópia do Template Original {template_id}...")
-    copy_metadata = {'name': f"TEMP_{nome_doc}"} 
+    logger.info(f"Gerando instância temporária do Template para {nome_paciente}...")
+    copy_metadata = {'name': f"TEMP_PLANO_{pct_id}"} 
     copia = drive_service.files().copy(fileId=template_id, body=copy_metadata).execute()
     doc_id = copia.get('id')
-    logger.info(f"Nova Instância do Documento Gerada: ID {doc_id}")
     
-    # 2. Formata a tabela / listagem semanal de texto final pro paciente ler
+    # 2. Formata a tabela / listagem semanal
     itens_str = ""
     for plano in planos_diarios:
         dia = plano.get("dia", "DIA")
@@ -54,7 +49,7 @@ def gerar_pdf_plano_semanal(pct_id: str, resumo_semana: dict, planos_diarios: li
             itens_str += f"  • {it['nome']} - {it['peso_g']}g ({it['kcal']} kcal)\n"
         itens_str += "\n"
     
-    # 3. Dispara Replace de Textos Lotes no Doc usando o batchUpdate
+    # 3. Dispara Replace de Textos
     requests = [
         {'replaceAllText': {'containsText': {'text': '{{data}}', 'matchCase': True}, 'replaceText': str(data_formatada)}},
         {'replaceAllText': {'containsText': {'text': '{{kcal}}', 'matchCase': True}, 'replaceText': f"{resumo_semana.get('kcal_media', 0)} kcal/dia"}},
@@ -64,36 +59,35 @@ def gerar_pdf_plano_semanal(pct_id: str, resumo_semana: dict, planos_diarios: li
         {'replaceAllText': {'containsText': {'text': '{{itens}}', 'matchCase': True}, 'replaceText': itens_str}}
     ]
     
-    logger.info("Refletindo Placeholders no Banco Text-to-Doc...")
     docs_service.documents().batchUpdate(documentId=doc_id, body={'requests': requests}).execute()
     
-    # 4. Buscando Pasta do Paciente Através do pct_id
-    folder_id = find_patient_folder(pct_id)
-    parents = [folder_id] if folder_id else []
+    # 4. Busca ou Cria a Pasta do Paciente (Contextualização Total)
+    folder_id = find_patient_folder(pct_id, nome=nome_paciente, sobrenome=sobrenome_paciente)
+    if not folder_id:
+        logger.error(f"Impossível prosseguir sem pasta de destino para o PDF do paciente {pct_id}")
+        return ""
         
-    # 5. Exportar do Google Docs para Bytestream em formato PDF
-    logger.info("Exportando Documento Modificado para formatação PDF Raw Bytes...")
+    # 5. Exportar para PDF
+    logger.info("Exportando Documento para PDF...")
     request_pdf = drive_service.files().export_media(fileId=doc_id, mimeType='application/pdf')
     pdf_content = request_pdf.execute()
     
-    # 6. Upload do Arquivo PDF dentro da Estrutura
+    # 6. Upload do PDF na pasta do paciente
     file_metadata = {
-        'name': f"{nome_doc}.pdf",
-        'parents': parents
+        'name': nome_doc_pdf,
+        'parents': [folder_id]
     }
     media = MediaIoBaseUpload(io.BytesIO(pdf_content), mimetype='application/pdf', resumable=True)
     
-    logger.info(f"Enviando PDF definitivo {'para a pasta ' + folder_id if folder_id else 'para a raiz do Drive'}...")
     uploaded_pdf = drive_service.files().create(
         body=file_metadata, 
         media_body=media, 
         fields='id'
     ).execute()
-    final_pdf_id = uploaded_pdf.get('id')
-    logger.info(f"O PDF foi salvo na cloud Google com Sucesso! Identificador Final: {final_pdf_id}")
     
-    # 7. Discard do Documento Temporário Raw do Docs para evitar poluição no Driver
-    logger.info(f"Limpando o rastro Doc text (Apagando Doc ID: {doc_id})...")
+    final_pdf_id = uploaded_pdf.get('id')
+    
+    # 7. Limpeza
     drive_service.files().delete(fileId=doc_id).execute()
     
     return final_pdf_id

@@ -4,10 +4,10 @@ from nutriciones.core import config
 
 logger = logging.getLogger(__name__)
 
-def find_patient_folder(pct_id: str) -> str:
+def find_patient_folder(pct_id: str, nome: str = "", sobrenome: str = "") -> str:
     """
     Busca a pasta raiz do paciente cujo nome termina com '_{pct_id}'.
-    Retorna o ID da pasta no Drive, ou None se não encontrar.
+    Se não encontrar, cria uma nova seguindo o padrão nome-sobrenome_id.
     """
     service = get_drive_service()
     
@@ -18,20 +18,25 @@ def find_patient_folder(pct_id: str) -> str:
         results = service.files().list(q=query, spaces='drive', fields='files(id, name)').execute()
         items = results.get('files', [])
         
-        if not items:
-            logger.warning(f"Pasta para PCT_ID {pct_id} não foi encontrada no Drive.")
-            return None
-            
         for item in items:
             if item['name'].endswith(f"_{pct_id}"):
                 logger.info(f"Pasta Encontrada: {item['name']} (ID: {item['id']})")
                 return item['id']
                 
-        logger.info(f"Pasta Encontrada por substring parcial: {items[0]['name']} (ID: {items[0]['id']})")
-        return items[0]['id']
+        if items:
+            logger.info(f"Pasta Encontrada por substring parcial: {items[0]['name']} (ID: {items[0]['id']})")
+            return items[0]['id']
+            
     except Exception as e:
         logger.error(f"Erro ao buscar pasta do paciente com id {pct_id}: {e}")
-        return None
+
+    # Fluxo de Criação se não existir
+    if not nome or not sobrenome:
+        logger.warning(f"Pasta para PCT_ID {pct_id} não encontrada e dados para criação ausentes. Faltando nome/sobrenome.")
+        return ""
+
+    return criar_pasta_paciente(nome, sobrenome, pct_id)
+
 
 def criar_pasta_paciente(nome: str, sobrenome: str, pct_id: str) -> str:
     service = get_drive_service()
@@ -50,6 +55,9 @@ def criar_pasta_paciente(nome: str, sobrenome: str, pct_id: str) -> str:
     folder = service.files().create(body=file_metadata, fields='id').execute()
     folder_id = folder.get('id')
     logger.info(f"Pasta criada com Sucesso (ID: {folder_id})")
+    
+    # Após criar, já populamos com templates básicos se o CTO desejar
+    copiar_arquivos_iniciais_paciente(folder_id, nome)
     return folder_id
 
 def copiar_arquivos_iniciais_paciente(folder_id: str, nome: str):

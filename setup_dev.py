@@ -47,11 +47,32 @@ def install_dependencies():
         print(f"[X] Erro ao instalar dependências: {e}")
         sys.exit(1)
 
+def create_required_folders():
+    """Garante que as pastas de dados e logs existam."""
+    folders = [PROJECT_ROOT / "data", PROJECT_ROOT / "logs"]
+    for folder in folders:
+        if not folder.exists():
+            print(f"[*] Criando pasta: {folder.name}/")
+            folder.mkdir(parents=True, exist_ok=True)
+    print("[✔] Estrutura de pastas verificada.")
+
+def check_indices_sanity():
+    """Verifica se o cache de índices existe."""
+    indices_path = PROJECT_ROOT / "indices.bin"
+    if not indices_path.exists():
+        print("\n[!] AVISO: O cache local 'indices.bin' não foi encontrado.")
+        print("    Para performance O(1), você deve rodar o refresh inicial:")
+        print("    python -c \"from nutriciones.services.google.sheets.indices import refresh_indices; refresh_indices(True)\"")
+    else:
+        print("[✔] Cache de índices encontrado.")
+
 def main():
     print("=== NSS SABLA: SETUP DO AMBIENTE DE DESENVOLVIMENTO ===")
     check_python_version()
+    create_required_folders()
     create_venv()
     install_dependencies()
+    check_indices_sanity()
     
     print("\n[✔] Setup concluído com sucesso!")
     print("\nPara ativar o ambiente virtual:")

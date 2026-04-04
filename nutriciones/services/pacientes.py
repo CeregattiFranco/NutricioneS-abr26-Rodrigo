@@ -8,7 +8,7 @@ from nutriciones.core import config
 from nutriciones.models.pacientes import Paciente, PacienteEndereco, PacienteTelefone, PacienteEmail
 from nutriciones.services.google.sheets.base import inserir_lista_recursos, sheet_name_of_resource_type
 from nutriciones.services.google.sheets.types import PedidoInsercaoListaRecursos
-from nutriciones.services.google.drive import criar_pasta_paciente, copiar_arquivos_iniciais_paciente
+from nutriciones.services.google.drive import find_patient_folder
 
 logger = logging.getLogger(__name__)
 
@@ -144,13 +144,10 @@ def embarcar_paciente(
     logger.info("Configuração Google Sheets persistida! Iniciando provisionamento Google Drive...")
     
     try:
-        folder_id = criar_pasta_paciente(nome, sobrenome, pct_id)
-        if folder_id:
-            logger.info("Copiando anexos e arquivos template pra pasta do paciente...")
-            copiar_arquivos_iniciais_paciente(folder_id, nome)
+        # Padrão contextualizado: Encontra ou cria a pasta raiz do paciente
+        find_patient_folder(pct_id, nome=nome, sobrenome=sobrenome)
     except Exception as e:
-        logger.error(f"Ocorreu um erro ao configurar a hierarquia e arquivos no Drive: {e}")
-        logger.warning("Os dados relacionais no banco já foram gravados e não foram revertidos!")
+        logger.error(f"Erro ao provisionar pasta do paciente no Drive: {e}")
 
     logger.info(f"Embarque do paciente {pct_id} concluído com sucesso!")
     return pct_id
