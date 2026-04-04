@@ -12,6 +12,7 @@ from nutriciones.models.planos import PlanoAlimentar
 from nutriciones.models.prontuario import Prontuario
 from nutriciones.models.mensagens import Mensagem
 from nutriciones.models.biometria import ExameLaboratorial
+from nutriciones.models.rascunhos import RascunhoClinico
 from nutriciones.models.primary_key import HasPrimaryKey
 from nutriciones.services import google
 from nutriciones.services.google.sheets.types import Either, SheetRange
@@ -36,6 +37,7 @@ _relationships: dict[Sheet, list[tuple[Sheet, SheetColumnStr]]] = {
     Prontuario: [(Paciente, "C"), (Consulta, "B")],
     Mensagem: [(Paciente, "B")],
     ExameLaboratorial: [(Paciente, "B")],
+    RascunhoClinico: [(Paciente, "C"), (Consulta, "B")],
 }
 
 class IndicesStateless:

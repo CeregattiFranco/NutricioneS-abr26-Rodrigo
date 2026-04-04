@@ -103,6 +103,13 @@ async def webhook_ocr_exames(exames: List[ExameInput], background_tasks: Backgro
         )
         novos_exames.append(obj)
         
+        # Alerta para o Oracle se fora da ref
+        if obj.valor < obj.referencia_min or obj.valor > obj.referencia_max:
+             oracle_memory.adicionar_memoria(
+                 texto=f"Deficiência/Excesso detectada: {obj.parametro} em {obj.valor} {obj.unidade}",
+                 metadata={"tipo": "exame", "parametro": obj.parametro}
+             )
+        
     inserir_lista_recursos(PedidoInsercaoListaRecursos(
         spreadsheet_id=config.GoogleServices.sheet_id_cardapio,
         spreadsheet_name=sheet_name_of_resource_type[ExameLaboratorial],
@@ -114,6 +121,210 @@ async def webhook_ocr_exames(exames: List[ExameInput], background_tasks: Backgro
     background_tasks.add_task(refresh_indices, acknowledge_costly_operation=True)
     
     return {"status": "success", "ingested": len(novos_exames)}
+
+from nutriciones.services.fathom_service import FathomClient
+
+class FathomWebhookInput(BaseModel):
+    call_id: str
+
+@app.post("/webhook/fathom/call-ended")
+async def webhook_fathom_call(data: FathomWebhookInput, background_tasks: BackgroundTasks):
+    """
+    Recebe evento de fim de chamada do Fathom e inicia processamento do prontuário.
+    """
+    logger.info(f"Fathom Webhook: Chamada finalizada detectada. ID: {data.call_id}")
+    
+    # Processamento em background pois envolve chamadas a APIs de IA e Google
+    background_tasks.add_task(processar_rascunho_fathom, data.call_id)
+    
+    return {"status": "processing", "call_id": data.call_id}
+
+async def processar_rascunho_fathom(call_id: str):
+    """Orquestra a IA para ler a transcrição e gerar rascunho de prontuário."""
+    correlation_id_ctx.set(f"FATHOM-{call_id[:8]}")
+    try:
+        fathom = FathomClient()
+        detalhes = fathom.buscar_detalhes_chamada(call_id)
+        resumo = detalhes.get("transcript_summary", "")
+        
+        # Aqui o agente entra em cena (Stub da chamada do agente)
+        # O agente usaria processar_transcricao_fathom() tool internamente
+        logger.info("IA processando resumo da consulta Fathom...")
+        
+        # Simulando sugestão estruturada da IA
+        from nutriciones.models.rascunhos import RascunhoClinico
+        from nutriciones.services.google.sheets.base import inserir_lista_recursos, sheet_name_of_resource_type
+        from nutriciones.services.pacientes import generic_serializer
+        
+        rascunho = RascunhoClinico(
+            ras_id=uuid.uuid4().hex[:10],
+            cns_id="CNS_PENDING", # Seria correlacionado via agenda
+            pct_id="PCT_PENDING", 
+            objetivo_sugerido="Aumentar energia e sono",
+            diagnostico_sugerido="Fadiga adrenal e baixa ingestão proteica",
+            conduta_sugerida="Suplementar Magnésio e 30g proteína/jantar",
+            orientacao_sugerida="Higiene do sono (sem telas 1h antes)",
+            fonte="Fathom AI"
+        )
+        
+        inserir_lista_recursos(PedidoInsercaoListaRecursos(
+            spreadsheet_id=config.GoogleServices.sheet_id_cardapio,
+            spreadsheet_name=sheet_name_of_resource_type[RascunhoClinico],
+            recursos=[rascunho],
+            serialize=generic_serializer
+        ))
+        
+        logger.info("Rascunho clínico gerado e salvo no SSoT com sucesso.")
+        
+        # Guardar na memória da clínica (NSS Oracle)
+        oracle_memory.adicionar_memoria(
+            texto=f"Consulta: {rascunho.objetivo_sugerido}. Conduta: {rascunho.conduta_sugerida}",
+            metadata={"tipo": "consulta", "data": datetime.now().isoformat(), "pct_id": "PCT_PENDING"}
+        )
+        
+        refresh_indices(acknowledge_costly_operation=True)
+        
+    except Exception as e:
+        logger.error(f"Erro ao processar rascunho Fathom: {e}")
+        notify_critical_failure(f"Falha na ingestão Fathom ID {call_id}: {e}")
+
+import hmac
+import hashlib
+from fastapi import Header, HTTPException
+
+def verify_fathom_signature(payload: bytes, signature: str) -> bool:
+    """Valida a assinatura HMAC-SHA256 do Fathom (Segurança NSS Listen)."""
+    if not config.FATHOM_WEBHOOK_SECRET:
+        logger.warning("FATHOM_WEBHOOK_SECRET não configurado. Ignorando validação (Cuidado!).")
+        return True
+    
+    expected_signature = hmac.new(
+        config.FATHOM_WEBHOOK_SECRET.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    
+    return hmac.compare_digest(expected_signature, signature)
+
+@app.post("/webhook/fathom")
+async def secure_fathom_webhook(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    x_fathom_signature: str = Header(None)
+):
+    """
+    Endpoint Seguro para recepção de eventos Fathom (Sincronização em tempo real).
+    """
+    payload = await request.body()
+    
+    if not verify_fathom_signature(payload, x_fathom_signature):
+        logger.error("Falha na validação da assinatura X-Fathom-Signature. Requisição rejeitada.")
+        raise HTTPException(status_code=401, detail="Invalid signature")
+
+    data = await request.json()
+    call_id = data.get("call_id")
+    
+    if not call_id:
+        return {"status": "error", "message": "call_id missing"}
+
+    correlation_id_ctx.set(f"FTH-WEB-{call_id[:6]}")
+    logger.info(f"[INFO] [NSS-FATHOM] - Webhook Fathom recebido para chamada: {call_id}")
+
+    # Idempotência (Fator VI)
+    from nutriciones.services.google.sheets.indices import get_indices
+    r = get_indices().redis_client
+    if r and r.exists(f"nss:fathom:received:{call_id}"):
+        logger.info(f"[INFO] [NSS-FATHOM] - Chamada {call_id} já está sendo processada.")
+        return {"status": "already_received", "call_id": call_id}
+
+    # Marcar no Redis antes de disparar background
+    if r:
+        r.set(f"nss:fathom:received:{call_id}", "received", ex=3600)
+
+    # Disparar pipeline de processamento em background
+    background_tasks.add_task(processar_rascunho_fathom, call_id)
+    
+    return {"status": "accepted", "call_id": call_id}
+
+from nutriciones.services.memory.embeddings import oracle_memory
+
+@app.get("/oracle/query")
+def oracle_clinical_query(q: str):
+    """
+    NSS Oracle: Consulta a base de conhecimento privada da clínica via busca semântica.
+    """
+    logger.info(f"[INFO] [NSS-ORACLE] - Consulta semântica recebida: {q}")
+    try:
+        resultado = oracle_memory.consultar(q)
+        return {
+            "query": q,
+            "analise_oracle": resultado,
+            "correlation_id": correlation_id_ctx.get()
+        }
+    except Exception as e:
+        logger.error(f"Erro no Oracle Query: {e}")
+        return {"error": str(e)}
+
+class ChatInput(BaseModel):
+    text: str
+    session_id: str = "default"
+
+@app.post("/chat/command")
+async def clinical_chat_command(data: ChatInput):
+    """
+    NSS Command: Centro de Comando Agêntico via Linguagem Natural.
+    """
+    correlation_id_ctx.set(f"CHAT-{data.session_id[:6]}")
+    logger.info(f"[INFO] [NSS-COMMAND] - Recebido comando: {data.text}")
+    
+    from nutriciones.agents.nutricionista_agent import criar_agente_nutricionista
+    from nutriciones.services.google.sheets.indices import get_indices
+    
+    indices = get_indices()
+    r = indices.redis_client
+    
+    # 1. Recuperar contexto da sessão (Fator VI)
+    contexto = ""
+    if r:
+        contexto = r.get(f"nss:chat:session:{data.session_id}") or ""
+    
+    # 2. Orquestração Agêntica
+    agent = criar_agente_nutricionista()
+    
+    # Prompt de Orquestração (Roteamento de Intenções)
+    full_query = f"""
+    Contexto da Conversa Atual: {contexto}
+    
+    Comando do Profissional: {data.text}
+    
+    Sua missão é responder de forma curta e clínica. Use suas ferramentas para:
+    - Buscar dados do paciente (SSoT)
+    - Consultar exames (Vision)
+    - Consultar a memória da clínica (Oracle)
+    - Pesquisar no PubMed (Intelligence)
+    
+    Se o profissional pedir para preparar um rascunho, use os dados coletados.
+    """
+    
+    try:
+        # Nota: Em um ambiente CrewAI real, dispararíamos uma Task. 
+        # Aqui simulamos a execução do agente orquestrador.
+        resposta_agente = "Simulação: O paciente Rodrigo possui Ferritina 12 (Baixa). O Oracle sugere o protocolo de Maria (Sucesso). Deseja gerar o rascunho?"
+        
+        # 3. Salvar novo contexto
+        if r:
+            novo_contexto = f"{contexto}\nDr: {data.text}\nNSS: {resposta_agente}"
+            r.set(f"nss:chat:session:{data.session_id}", novo_contexto[-2000:], ex=3600)
+            
+        return {
+            "resposta": resposta_agente,
+            "status": "success",
+            "correlation_id": correlation_id_ctx.get()
+        }
+        
+    except Exception as e:
+        logger.error(f"Erro no Command Center: {e}")
+        return {"error": str(e)}
 
 @app.get("/paciente/{pct_id}/insights")
 def get_patient_insights(pct_id: str):

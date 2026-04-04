@@ -34,6 +34,9 @@ class Config:
         exams_sheet_template_id = os.environ.get("GOOGLE_EXAMS_SHEET_TEMPLATE_ID", "")
 
     OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+    FIRECRAWL_API_KEY = os.environ.get("FIRECRAWL_API_KEY", "")
+    FATHOM_API_KEY = os.environ.get("FATHOM_API_KEY", "")
+    FATHOM_WEBHOOK_SECRET = os.environ.get("FATHOM_WEBHOOK_SECRET", "")
     
     BASE_DIR = Path(__file__).parent.parent
     DATA_DIR = BASE_DIR / "data"

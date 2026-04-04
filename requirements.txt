@@ -37,3 +37,5 @@ redis==5.2.1
 syslog-rfc5424-formatter==1.6.1
 fastapi==0.115.0
 uvicorn==0.31.0
+chromadb==0.5.11
+sentence-transformers==3.1.1

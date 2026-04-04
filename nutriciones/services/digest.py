@@ -104,8 +104,19 @@ def _buscar_consultas_data(data_ref):
     # Simplificação: retornamos as que estão no SSoT
     return [c for c in consultas if c.status in ['agendado', 'confirmado']]
 
+from nutriciones.services.search.firecrawler import buscar_atualizacao_cientifica
+
 def _formatar_e_enviar_digest(hoje_data, amanha_lista):
     corpo = "--- DIGEST DIÁRIO NUTRICIONES ---\n\n"
+    
+    # 0. Curadoria Científica do Dia (NSS Intelligence)
+    if hoje_data:
+        tema_dia = hoje_data[0]["ultimo_objetivo"][:30] # Pega o tema do primeiro paciente
+        curadoria = buscar_atualizacao_cientifica(tema_dia)
+        corpo += f"🔬 CURADORIA CIENTÍFICA DO DIA: {tema_dia}\n"
+        corpo += f"{curadoria}\n"
+        corpo += "---------------------------------\n\n"
+    
     corpo += f"AGENDA DE HOJE ({len(hoje_data)} consultas):\n"
     for item in hoje_data:
         corpo += f"- {item['paciente']} [{item['status'].upper()}]\n"

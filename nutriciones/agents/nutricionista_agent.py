@@ -61,18 +61,46 @@ def analisar_evolucao_paciente(pct_id: str) -> str:
     except Exception as e:
         return f"Erro ao analisar evolução: {e}"
 
+from nutriciones.services.search.firecrawler import FirecrawlExplorer
+
+@tool("Pesquisar Evidencia Atualizada")
+def pesquisar_evidencia_atualizada(tema: str) -> str:
+    """Busque artigos científicos e evidências clínicas atualizadas (Ex: PubMed) para embasar Condutas Nutricionais complexas ou tratar patologias específicas."""
+    try:
+        explorer = FirecrawlExplorer()
+        return explorer.pesquisar_evidencias(tema)
+    except Exception as e:
+        return f"Erro ao acessar base científica: {e}"
+
+@tool("Processar Transcricao Fathom")
+def processar_transcricao_fathom(resumo_bruto: str) -> str:
+    """Extraia Objetivo, Diagnostico, Conduta e Orientacao de um resumo bruto de transcricao (SOPP) e sugira um rascunho estruturado."""
+    # Aqui a IA processará o texto para retornar JSON estruturado (simulado no rascunho)
+    # Em produção, o Agente usará este texto para preencher o Prontuario.
+    return resumo_bruto # Por agora apenas retorna o texto para o Agente consumir
+
+from nutriciones.services.memory.embeddings import oracle_memory
+
+@tool("Consultar Memória da Clínica")
+def consultar_memoria_da_clinica(query: str) -> str:
+    """Consulte a base de conhecimento privada (experiência acumulada) de TODAS as consultas e pesquisas científicas passadas da clínica para encontrar o que melhor funcionou em casos similares."""
+    try:
+        return oracle_memory.consultar(query)
+    except Exception as e:
+        return f"Erro ao acessar memória vetorial: {e}"
+
 def criar_agente_nutricionista():
     return Agent(
-        role="Auditor e Nutricionista Bio-Intelligence (NSS Vision)",
-        goal="Analisar desfechos históricos e BIOMARCADORES (Exames) para propor condutas nutricionais baseadas em evidências laboratoriais.",
+        role="Oráculo Clínico e Pesquisador Ph.D. (NSS Oracle)",
+        goal="Montar as condutas mais precisas do mundo baseando-se no cruzamento de Voz, Exames, Ciência e na MEMÓRIA HISTÓRICA de sucesso da clínica.",
         backstory=(
-            "Você é um cientista de dados clínico. Antes de tudo, você usa 'Analisar Evolucao Paciente'. "
-            "Se o paciente tiver um BIOMARCADOR em 'Alerta' (ex: Ferritina baixa), você DEVE ajustar a Conduta e o Diagnóstico imediatamente. "
-            "Você é 100% Plant-Based e usa o TACO SSoT como guia. "
-            "Se houver deficiência de ferro, você sugere leguminosas e vegetais verde-escuros. "
-            "Você nunca ignora um exame alterado."
+            "Você é o guardião do conhecimento da Clínica Sem Stress. "
+            "Antes de qualquer prescrição, você usa 'Consultar Memória da Clínica' para verificar se outros pacientes "
+            "com sintomas ou biomarcadores similares tiveram sucesso com condutas específicas no passado. "
+            "Sua conduta é 100% personalizada e baseada na experiência coletiva da clínica. "
+            "Você é 100% Plant-Based e metódico."
         ),
         verbose=True,
         allow_delegation=False,
-        tools=[pesquisar_alimentos_ssot, calcular_macronutrientes_tool, analisar_evolucao_paciente]
+        tools=[pesquisar_alimentos_ssot, calcular_macronutrientes_tool, analisar_evolucao_paciente, pesquisar_evidencia_atualizada, processar_transcricao_fathom, consultar_memoria_da_clinica]
     )
