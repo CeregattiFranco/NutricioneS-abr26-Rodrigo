@@ -60,6 +60,15 @@ def criar_pasta_paciente(nome: str, sobrenome: str, pct_id: str) -> str:
     copiar_arquivos_iniciais_paciente(folder_id, nome)
     return folder_id
 
+def find_clinical_record(folder_id: str, nome: str) -> str:
+    """Busca o arquivo de Prontuário dentro da pasta do paciente."""
+    service = get_drive_service()
+    query = f"'{folder_id}' in parents and name contains 'Prontuário' and trashed=false"
+    
+    results = service.files().list(q=query, fields='files(id, name)').execute()
+    items = results.get('files', [])
+    return items[0]['id'] if items else ""
+
 def copiar_arquivos_iniciais_paciente(folder_id: str, nome: str):
     service = get_drive_service()
     

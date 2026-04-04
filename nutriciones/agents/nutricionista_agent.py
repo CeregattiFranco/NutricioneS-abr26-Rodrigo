@@ -38,19 +38,41 @@ def calcular_macronutrientes_tool(itens_json_str: str) -> str:
     except Exception as e:
         return f"Erro ao processar as gramagens: {e}. Verifique o formato do JSON enviado (deve ser Array de Dicts)."
 
+from nutriciones.services.biometrics import extrair_historico_clinico, calcular_gap_objetivo, extrair_exames_recentes
+
+@tool("Analisar Evolucao Paciente")
+def analisar_evolucao_paciente(pct_id: str) -> str:
+    """Consulte o histórico de evolução e EXAMES LABORATORIAIS para entender desfechos e deficiências ANTES de propor novas condutas."""
+    try:
+        historico = extrair_historico_clinico(pct_id)
+        exames = extrair_exames_recentes(pct_id)
+        
+        analise = calcular_gap_objetivo(historico) if historico else "Sem histórico clínico."
+        
+        exm_fmt = "\n".join([f"  - {e['parametro']}: {e['valor']} {e['unidade']} ({e['status']})" for e in exames]) if exames else "Nenhum exame laboratoriais pendente."
+        
+        hist_recent = "\n".join([f"- {h['data']}: '{h['objetivo']}' -> '{h['conduta']}'" for h in historico[-2:]]) if historico else ""
+        
+        return (
+            f"HISTÓRICO CLÍNICO:\n{hist_recent}\n\n"
+            f"BIOMARCADORES (EXAMES):\n{exm_fmt}\n\n"
+            f"CONCLUSÃO BIO-INTELLIGENCE:\n{analise}"
+        )
+    except Exception as e:
+        return f"Erro ao analisar evolução: {e}"
+
 def criar_agente_nutricionista():
     return Agent(
-        role="Nutricionista Especialista em Dietas Vegetarianas Estritas (Plant-Based)",
-        goal="Montar cardápios diários 100% vegetarianos estritos, puramente à base de plantas, precisamente balanceados e criativos para os pacientes, não deixando a semana ser monótona.",
+        role="Auditor e Nutricionista Bio-Intelligence (NSS Vision)",
+        goal="Analisar desfechos históricos e BIOMARCADORES (Exames) para propor condutas nutricionais baseadas em evidências laboratoriais.",
         backstory=(
-            "Você é um nutricionista altamente metódico e muito criativo, focado em precisão matemática diária, "
-            "que usa a base TACO SSoT como sua inquestionável fonte de verdade. "
-            "Sua especialidade primária é o Vegetarianismo Estrito (Veganismo). **NUNCA PRESCREVA CARNES, FRANGO, PEIXE, OVOS, LEITE, QUEIJO, MEL OU PRODUTOS DE ORIGEM ANIMAL.** "
-            "Você odeia cardápios super monótonos. Por isso você escuta o histórico dos dias passados da semana para propor leguminosas (feijões, lentilha, grão-de-bico), cereais, sementes, oleaginosas, hortaliças e frutas diferentes para seus pacientes. "
-            "Você distribui precisamente o alimento focado num alvo: Café 20%, Almoço 40% e Jantar 40%. "
-            "Você NUNCA adivinha. Você SEMPRE usa 'Pesquisar Alimentos SSoT' e logo após 'Calcular Macronutrientes da Refeicao'."
+            "Você é um cientista de dados clínico. Antes de tudo, você usa 'Analisar Evolucao Paciente'. "
+            "Se o paciente tiver um BIOMARCADOR em 'Alerta' (ex: Ferritina baixa), você DEVE ajustar a Conduta e o Diagnóstico imediatamente. "
+            "Você é 100% Plant-Based e usa o TACO SSoT como guia. "
+            "Se houver deficiência de ferro, você sugere leguminosas e vegetais verde-escuros. "
+            "Você nunca ignora um exame alterado."
         ),
         verbose=True,
         allow_delegation=False,
-        tools=[pesquisar_alimentos_ssot, calcular_macronutrientes_tool]
+        tools=[pesquisar_alimentos_ssot, calcular_macronutrientes_tool, analisar_evolucao_paciente]
     )

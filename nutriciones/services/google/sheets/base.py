@@ -3,6 +3,9 @@ from nutriciones.models.consultas import Consulta
 from nutriciones.models.pacientes import (Paciente, PacienteEmail,
                                           PacienteEndereco, PacienteTelefone)
 from nutriciones.models.planos import PlanoAlimentar
+from nutriciones.models.prontuario import Prontuario
+from nutriciones.models.mensagens import Mensagem
+from nutriciones.models.biometria import ExameLaboratorial
 from nutriciones.models.primary_key import HasPrimaryKey
 from nutriciones.services.google import auth_service
 from nutriciones.services.google.sheets.indices import get_indices
@@ -214,4 +217,7 @@ sheet_name_of_resource_type: dict[type[HasPrimaryKey], str] = {
     PacienteEmail: 'db_pacientes_emails',
     PacienteEndereco: 'db_pacientes_enderecos',
     PlanoAlimentar: 'db_planosAlimentares',
+    Prontuario: 'db_prontuarios',
+    Mensagem: 'db_mensagens',
+    ExameLaboratorial: 'db_exames_laboratoriais',
 }

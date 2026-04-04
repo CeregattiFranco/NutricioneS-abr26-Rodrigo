@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: nss-app
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - BASE_URL=http://localhost:8000
+    depends_on:
+      - redis
+    volumes:
+      - .env:/app/.env
+      - credentials.json:/app/credentials.json
+      - ./data:/app/data
+      - ./logs:/app/logs
+
+  redis:
+    image: redis:alpine
+    container_name: nss-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:
+    driver: local

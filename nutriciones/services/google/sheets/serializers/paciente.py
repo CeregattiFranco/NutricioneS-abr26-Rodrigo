@@ -6,6 +6,8 @@ import json
 from nutriciones.models.pacientes import Paciente, PacienteEmail, PacienteEndereco, PacienteTelefone
 from nutriciones.models.agenda import Agenda
 from nutriciones.models.consultas import Consulta
+from nutriciones.models.prontuario import Prontuario
+from nutriciones.models.mensagens import Mensagem
 from nutriciones.services.google.sheets.types import Either
 
 def _parse_date(val: str) -> date:
@@ -68,6 +70,46 @@ def deserialize_endereco(row: Sequence[str]) -> Either[PacienteEndereco, ValueEr
             numero=row[4], complemento=row[5], bairro=row[6], cidade=row[7],
             uf=row[8], pais=row[9], endereco_nfse=row[10] == 'TRUE',
             ativo=row[11] == 'TRUE', created_at=_parse_datetime(row[12]), updated_at=_parse_datetime(row[13])
+        ), None
+    except Exception as e: return None, ValueError(str(e))
+
+def deserialize_mensagem(row: Sequence[str]) -> Either[Mensagem, ValueError]:
+    try:
+        return Mensagem(
+            msg_id=row[0],
+            pct_id=row[1],
+            origem=row[2],
+            assunto=row[3],
+            conteudo=row[4],
+            resumo_ia=row[5],
+            status=row[6],
+            template_name=row[7],
+            scheduled_at=None if row[8] == '' else _parse_datetime(row[8]),
+            created_at=_parse_datetime(row[9]),
+            updated_at=_parse_datetime(row[10])
+        ), None
+    except Exception as e: return None, ValueError(str(e))
+
+def deserialize_prontuario(row: Sequence[str]) -> Either[Prontuario, ValueError]:
+    try:
+        return Prontuario(
+            prt_id=row[0], cns_id=row[1], pct_id=row[2], objetivo=row[3],
+            diagnostico=row[4], conduta=row[5], orientacao=row[6],
+            created_at=_parse_datetime(row[7]), updated_at=_parse_datetime(row[8])
+        ), None
+    except Exception as e: return None, ValueError(str(e))
+
+from nutriciones.models.biometria import ExameLaboratorial
+
+def deserialize_exame(row: Sequence[str]) -> Either[ExameLaboratorial, ValueError]:
+    try:
+        return ExameLaboratorial(
+            exm_id=row[0], pct_id=row[1], parametro=row[2], valor=float(row[3]),
+            unidade=row[4], referencia_min=float(row[5]), referencia_max=float(row[6]),
+            observacao=row[7] if len(row) > 7 else None,
+            data_exame=_parse_datetime(row[8]) if len(row) > 8 else datetime.now(),
+            created_at=_parse_datetime(row[9]) if len(row) > 9 else datetime.now(),
+            updated_at=_parse_datetime(row[10]) if len(row) > 10 else datetime.now()
         ), None
     except Exception as e: return None, ValueError(str(e))
 

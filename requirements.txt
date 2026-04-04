@@ -33,3 +33,7 @@ Pygments==2.20.0
 packaging==26.0
 pluggy==1.6.0
 iniconfig==2.3.0
+redis==5.2.1
+syslog-rfc5424-formatter==1.6.1
+fastapi==0.115.0
+uvicorn==0.31.0
