@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   app:
-    build: .
+    image: ${DOCKER_IMAGE_NAME:-ghcr.io/nutriciones/nss-app:latest}
     container_name: nss-app
     restart: always
     ports:
@@ -19,6 +19,14 @@ services:
       - credentials.json:/app/credentials.json
       - ./data:/app/data
       - ./logs:/app/logs
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: nss-watchtower
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 1800 --cleanup
 
   redis:
     image: redis:alpine

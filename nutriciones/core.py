@@ -38,8 +38,15 @@ class Config:
     FATHOM_API_KEY = os.environ.get("FATHOM_API_KEY", "")
     FATHOM_WEBHOOK_SECRET = os.environ.get("FATHOM_WEBHOOK_SECRET", "")
     
+    # NSS Shield - Cloud Backups (S3)
+    AWS_ACCESS_KEY = os.environ.get("AWS_ACCESS_KEY", "")
+    AWS_SECRET_KEY = os.environ.get("AWS_SECRET_KEY", "")
+    S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME", "nss-backups")
+    BACKUP_RETENTION_DAYS = int(os.environ.get("BACKUP_RETENTION_DAYS", "30"))
+    
     BASE_DIR = Path(__file__).parent.parent
     DATA_DIR = BASE_DIR / "data"
+    BACKUP_DIR = BASE_DIR / "backups"
     DB_PATH = DATA_DIR / "taco.sqlite"
     TACO_JSON_PATH = DATA_DIR / "taco.json"
 
