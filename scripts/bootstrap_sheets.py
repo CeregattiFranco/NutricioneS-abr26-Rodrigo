@@ -20,7 +20,8 @@ TABLE_SCHEMAS = {
     "db_pacientes_enderecos": ["adr_id", "pct_id", "cep", "logradouro", "numero", "complemento", "bairro", "cidade", "uf", "pais", "endereco_nfse", "ativo", "created_at", "updated_at"],
     "db_agenda": ["agd_id", "data", "hora_inicio", "hora_fim", "slot", "status", "ativo", "created_at", "updated_at"],
     "db_consultas": ["cns_id", "pct_id", "agd_id", "consulta_perfil", "status", "ativo", "slot", "calendar_event_id", "meet_url", "calendar_event_url", "created_at", "updated_at"],
-    "db_planosAlimentares": ["plano_id", "pct_id", "cns_id", "data", "total_kcal", "total_proteina", "total_carboidrato", "total_lipidios", "itens_detalhados"]
+    "db_planosAlimentares": ["plano_id", "pct_id", "cns_id", "data", "total_kcal", "total_proteina", "total_carboidrato", "total_lipidios", "itens_detalhados"],
+    "db_triagem": ["tri_id", "pct_id", "score_metabolico", "score_comportamental", "score_execucao", "score_expectativa", "score_seguranca", "dominante_sugerido", "created_at"]
 }
 
 def bootstrap():

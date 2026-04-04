@@ -94,12 +94,12 @@ def consultar_triagem_perfil(pct_id: str) -> str:
     """Consulte o Perfil Dominante e o Semáforo de Risco do paciente. Use isso para garantir que sua conduta é segura e sustentável para o momento atual dele."""
     try:
         from nutriciones.services.google.sheets.indices import get_indices
-        from nutriciones.models.triagem import TriagemPaciente
+        from nutriciones.models.triagem import TriagemPerfil
         indices = get_indices()
-        pks = indices.get_back_references(Paciente, pct_id, TriagemPaciente)
+        pks = indices.get_back_references(Paciente, pct_id, TriagemPerfil)
         if not pks: return "Nenhuma triagem encontrada. Proceda com cautela."
         # Pegar a última
-        return f"Perfil Dominante: {pks[-1]} (Consulte a db_triagem para detalhes de scores)."
+        return f"Perfil Dominante: {pks[-1]} (Consulte a db_triagem para detalhes de cada score)."
     except Exception as e:
         return f"Erro ao acessar triagem: {e}"
 
@@ -111,8 +111,9 @@ def criar_agente_nutricionista():
             "Você é o guardião ético da Clínica Sem Stress. "
             "Sua regra de ouro: Antes de qualquer prescrição, você DEVE usar 'Consultar Perfil Dominante'. "
             "TRAVAS DE SEGURANÇA: "
-            "1. Se o perfil for 'VERMELHO_Emocional' ou 'VERMELHO_CustoEnergia', você está PROIBIDO de sugerir pesagem de alimentos, jejuns longos ou suplementação complexa. Foque no mínimo viável. "
-            "2. Se for 'VERDE_ESTAVEL', você tem liberdade para aplicar protocolos de alta performance. "
+            "1. Se o perfil dominante for 'VERMELHO_COMPORTAMENTAL', você está PROIBIDO de sugerir pesagem de alimentos ou restrições severas. "
+            "2. Se o perfil for 'VERMELHO_EXECUCAO', você DEVE simplificar a dieta ao máximo (mínimo viável). "
+            "3. Se for 'VERDE', você tem liberdade para aplicar protocolos de performance. "
             "Sua missão é evitar o abandono do paciente por excesso de estresse clínico."
         ),
         verbose=True,

@@ -248,17 +248,24 @@ async def secure_fathom_webhook(
 
 from nutriciones.services.memory.embeddings import oracle_memory
 
-from nutriciones.services.triagem_service import calcular_escores_triagem
+from nutriciones.services.triagem_service import processar_respostas_triage
 
 class TriagemInput(BaseModel):
     pct_id: str
     respostas: Dict[str, int]
+    nss_forms_token: str
 
 @app.post("/webhook/forms/triagem")
 async def webhook_forms_triagem(data: TriagemInput, background_tasks: BackgroundTasks):
     """
     Ingestão de Perfil Dominante via Google Forms (NSS Triage).
     """
+    # Validação de Segurança
+    token_esperado = os.getenv("NSS_FORMS_TOKEN", "nss_secret_123")
+    if data.nss_forms_token != token_esperado:
+        logger.warning(f"Tentativa de triagem com token inválido para pct_id: {data.pct_id}")
+        raise HTTPException(status_code=401, detail="Unauthorized: Invalid NSS Forms Token")
+
     correlation_id_ctx.set(f"TRI-{data.pct_id[:6]}")
     logger.info(f"[INFO] [NSS-TRIAGE] - Triagem recebida para paciente: {data.pct_id}")
     
@@ -270,22 +277,27 @@ async def webhook_forms_triagem(data: TriagemInput, background_tasks: Background
 async def processar_persistência_triagem(data: TriagemInput):
     """Pipeline de Persistência e Auditoria da Triagem."""
     try:
-        resultado = calcular_escores_triagem(data.pct_id, data.respostas)
+        resultado = processar_respostas_triage(data.pct_id, data.respostas)
         
         from nutriciones.services.google.sheets.base import inserir_lista_recursos, PedidoInsercaoListaRecursos, sheet_name_of_resource_type
-        from nutriciones.models.triagem import TriagemPaciente
+        from nutriciones.models.triagem import TriagemPerfil
         
         inserir_lista_recursos(PedidoInsercaoListaRecursos(
             spreadsheet_id=config.GoogleServices.sheet_id_cardapio,
-            spreadsheet_name=sheet_name_of_resource_type[TriagemPaciente],
+            spreadsheet_name=sheet_name_of_resource_type[TriagemPerfil],
             spreadsheet_range="A2:Z",
             recursos=[resultado],
-            serialize=lambda r: [r.tri_id, r.pct_id, r.escore_metabolico, r.escore_emocional, r.escore_custo_energia, r.escore_urgencia, r.escore_seguranca, r.perfil_dominante, r.data_triagem.isoformat()]
+            serialize=lambda r: [
+                r.tri_id, r.pct_id, 
+                r.score_metabolico, r.score_comportamental, 
+                r.score_execucao, r.score_expectativa, 
+                r.score_seguranca, r.dominante_sugerido, 
+                r.data_triagem.isoformat()
+            ]
         ))
         
-        logger.info(f"[INFO] [NSS-TRIAGE] - Perfil Dominante salvo no SSoT: {resultado.perfil_dominante}")
+        logger.info(f"[INFO] [NSS-TRIAGE] - Perfil Dominante salvo no SSoT: {resultado.dominante_sugerido}")
         
-        # Opcional: Aqui poderíamos disparar o batchUpdate para pintar as cores (UX)
         refresh_indices(acknowledge_costly_operation=True)
         
     except Exception as e:

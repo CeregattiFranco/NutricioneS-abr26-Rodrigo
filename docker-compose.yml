@@ -1,7 +1,6 @@
-version: '3.8'
-
 services:
   app:
+    build: .
     image: ${DOCKER_IMAGE_NAME:-ghcr.io/nutriciones/nss-app:latest}
     container_name: nss-app
     restart: always
@@ -15,8 +14,8 @@ services:
     depends_on:
       - redis
     volumes:
-      - .env:/app/.env
-      - credentials.json:/app/credentials.json
+      - ./.env:/app/.env
+      - ./credentials.json:/app/credentials.json
       - ./data:/app/data
       - ./logs:/app/logs
 
