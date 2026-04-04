@@ -8,6 +8,8 @@ from nutriciones.models.mensagens import Mensagem
 from nutriciones.models.biometria import ExameLaboratorial
 from nutriciones.models.rascunhos import RascunhoClinico
 from nutriciones.models.fathom import FathomCall
+from nutriciones.models.triagem import TriagemPaciente
+from nutriciones.models.outcomes import DesfechoClinico
 from nutriciones.models.primary_key import HasPrimaryKey
 from nutriciones.services.google import auth_service
 from nutriciones.services.google.sheets.indices import get_indices
@@ -224,4 +226,6 @@ sheet_name_of_resource_type: dict[type[HasPrimaryKey], str] = {
     ExameLaboratorial: 'db_exames_laboratoriais',
     RascunhoClinico: 'db_rascunhos_clinicos',
     FathomCall: 'db_fathom',
+    TriagemPaciente: "db_triagem",
+    DesfechoClinico: "db_outcomes",
 }

@@ -89,18 +89,33 @@ def consultar_memoria_da_clinica(query: str) -> str:
     except Exception as e:
         return f"Erro ao acessar memória vetorial: {e}"
 
+@tool("Consultar Perfil Dominante (Triagem)")
+def consultar_triagem_perfil(pct_id: str) -> str:
+    """Consulte o Perfil Dominante e o Semáforo de Risco do paciente. Use isso para garantir que sua conduta é segura e sustentável para o momento atual dele."""
+    try:
+        from nutriciones.services.google.sheets.indices import get_indices
+        from nutriciones.models.triagem import TriagemPaciente
+        indices = get_indices()
+        pks = indices.get_back_references(Paciente, pct_id, TriagemPaciente)
+        if not pks: return "Nenhuma triagem encontrada. Proceda com cautela."
+        # Pegar a última
+        return f"Perfil Dominante: {pks[-1]} (Consulte a db_triagem para detalhes de scores)."
+    except Exception as e:
+        return f"Erro ao acessar triagem: {e}"
+
 def criar_agente_nutricionista():
     return Agent(
-        role="Oráculo Clínico e Pesquisador Ph.D. (NSS Oracle)",
-        goal="Montar as condutas mais precisas do mundo baseando-se no cruzamento de Voz, Exames, Ciência e na MEMÓRIA HISTÓRICA de sucesso da clínica.",
+        role="Oráculo Clínico e Curador de Segurança (NSS Triage)",
+        goal="Montar as condutas mais seguras do mundo baseando-se na Triagem de Perfil Dominante, Voz, Exames e Ciência.",
         backstory=(
-            "Você é o guardião do conhecimento da Clínica Sem Stress. "
-            "Antes de qualquer prescrição, você usa 'Consultar Memória da Clínica' para verificar se outros pacientes "
-            "com sintomas ou biomarcadores similares tiveram sucesso com condutas específicas no passado. "
-            "Sua conduta é 100% personalizada e baseada na experiência coletiva da clínica. "
-            "Você é 100% Plant-Based e metódico."
+            "Você é o guardião ético da Clínica Sem Stress. "
+            "Sua regra de ouro: Antes de qualquer prescrição, você DEVE usar 'Consultar Perfil Dominante'. "
+            "TRAVAS DE SEGURANÇA: "
+            "1. Se o perfil for 'VERMELHO_Emocional' ou 'VERMELHO_CustoEnergia', você está PROIBIDO de sugerir pesagem de alimentos, jejuns longos ou suplementação complexa. Foque no mínimo viável. "
+            "2. Se for 'VERDE_ESTAVEL', você tem liberdade para aplicar protocolos de alta performance. "
+            "Sua missão é evitar o abandono do paciente por excesso de estresse clínico."
         ),
         verbose=True,
         allow_delegation=False,
-        tools=[pesquisar_alimentos_ssot, calcular_macronutrientes_tool, analisar_evolucao_paciente, pesquisar_evidencia_atualizada, processar_transcricao_fathom, consultar_memoria_da_clinica]
+        tools=[pesquisar_alimentos_ssot, calcular_macronutrientes_tool, analisar_evolucao_paciente, pesquisar_evidencia_atualizada, processar_transcricao_fathom, consultar_memoria_da_clinica, consultar_triagem_perfil]
     )

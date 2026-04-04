@@ -248,6 +248,68 @@ async def secure_fathom_webhook(
 
 from nutriciones.services.memory.embeddings import oracle_memory
 
+from nutriciones.services.triagem_service import calcular_escores_triagem
+
+class TriagemInput(BaseModel):
+    pct_id: str
+    respostas: Dict[str, int]
+
+@app.post("/webhook/forms/triagem")
+async def webhook_forms_triagem(data: TriagemInput, background_tasks: BackgroundTasks):
+    """
+    Ingestão de Perfil Dominante via Google Forms (NSS Triage).
+    """
+    correlation_id_ctx.set(f"TRI-{data.pct_id[:6]}")
+    logger.info(f"[INFO] [NSS-TRIAGE] - Triagem recebida para paciente: {data.pct_id}")
+    
+    # Processamento em background para resposta rápida ao Webhook
+    background_tasks.add_task(processar_persistência_triagem, data)
+    
+    return {"status": "accepted", "pct_id": data.pct_id}
+
+async def processar_persistência_triagem(data: TriagemInput):
+    """Pipeline de Persistência e Auditoria da Triagem."""
+    try:
+        resultado = calcular_escores_triagem(data.pct_id, data.respostas)
+        
+        from nutriciones.services.google.sheets.base import inserir_lista_recursos, PedidoInsercaoListaRecursos, sheet_name_of_resource_type
+        from nutriciones.models.triagem import TriagemPaciente
+        
+        inserir_lista_recursos(PedidoInsercaoListaRecursos(
+            spreadsheet_id=config.GoogleServices.sheet_id_cardapio,
+            spreadsheet_name=sheet_name_of_resource_type[TriagemPaciente],
+            spreadsheet_range="A2:Z",
+            recursos=[resultado],
+            serialize=lambda r: [r.tri_id, r.pct_id, r.escore_metabolico, r.escore_emocional, r.escore_custo_energia, r.escore_urgencia, r.escore_seguranca, r.perfil_dominante, r.data_triagem.isoformat()]
+        ))
+        
+        logger.info(f"[INFO] [NSS-TRIAGE] - Perfil Dominante salvo no SSoT: {resultado.perfil_dominante}")
+        
+        # Opcional: Aqui poderíamos disparar o batchUpdate para pintar as cores (UX)
+        refresh_indices(acknowledge_costly_operation=True)
+        
+    except Exception as e:
+        logger.error(f"Erro ao processar triagem: {e}")
+
+from nutriciones.services.analytics import nss_analytics
+
+@app.get("/clinica/analytics")
+def get_clinic_performance():
+    """
+    NSS Analytics: Dashboard de Performance Clínica e Governança de Resultados.
+    """
+    logger.info("[INFO] [NSS-ANALYTICS] - Consulta de auditoria de performance recebida.")
+    try:
+        dados = nss_analytics.calcular_performance_clinica()
+        return {
+            "status": "active",
+            "stats": dados,
+            "correlation_id": correlation_id_ctx.get()
+        }
+    except Exception as e:
+        logger.error(f"Erro no Analytics Auditor: {e}")
+        return {"error": str(e)}
+
 @app.get("/oracle/query")
 def oracle_clinical_query(q: str):
     """

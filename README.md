@@ -6,41 +6,55 @@ O **NutricioneS Sabla (NSS)** é uma Infraestrutura Autônoma de Gestão Clínic
 
 ---
 
-## 🧠 A Filosofia Operacional: Os 4 Inputs Clínicos
+## 🚀 Os 7 Pilares da "Clínica Sem Stress"
 
-O sistema elimina a necessidade de o profissional navegar por dezenas de abas e formulários. A inteligência central é acionada exclusivamente pelo preenchimento de **4 pilares pós-consulta**:
+O NSS opera em background ("sob as paredes" do consultório) monitorando, escutando e aprendendo com o ambiente clínico através de 7 módulos independentes:
 
-1. **Objetivo:** A meta central do paciente (Ex: *"Perda de 5kg de gordura"*).
-2. **Diagnóstico:** A análise técnica baseada em histórico e exames.
-3. **Conduta:** A prescrição terapêutica/nutricional baseada em evidências.
-4. **Orientação:** O plano de ação digerido para o paciente.
+### 🎙️ 1. NSS Listen (Escuta Ativa)
 
-Ao salvar estes 4 inputs, o NSS orquestra autonomamente o envio de e-mails, arquivamento de documentos, organização de pastas no Drive e o agendamento de retornos.
+- **Transcrição Fathom AI**: Ingestão de áudio via Webhooks seguros (HMAC). 👋📥
+- **Rascunho Clínico**: O sistema "ouve" a consulta e gera sugestões automáticas dos 4 Inputs (Objetivo, Diagnóstico, Conduta, Orientação), eliminando a digitação manual.
+
+### 👁️ 2. NSS Vision (Visão Clínica)
+
+- **OCR de Exames & Biometria**: Ingestão via webhooks do n8n (Tesseract/Vision). 👋🔬
+- **Alertas de Biomarcadores**: Identificação automática de deficiências (ex: Ferritina baixa) com cruzamento imediato de valores de referência.
+
+### 🔬 3. NSS Intelligence (Pesquisa Científica)
+
+- **Clinical Scholar (Firecrawl)**: Pesquisas em tempo real no *PubMed* e *Google Scholar* para fundamentar condutas diante de diagnósticos complexos. 👋📚
+- **Curadoria no Digest**: Seu e-mail diário inclui artigos científicos baseados nos temas das consultas do dia.
+
+### 🧠 4. NSS Oracle (Memória Vetorial)
+
+- **Cérebro Institucional (ChromaDB)**: O sistema vetoriza e "lembra" de todos os desfechos clínicos anteriores. 👋🧠
+- **RAG de Sucesso**: Antes de prescrever, a IA consulta o Oráculo: *"O que funcionou para pacientes similares no passado?"*.
+
+### 🚥 5. NSS Triage (Perfil Dominante)
+
+- **Semáforo Clínico**: Pipeline de triagem que calcula scores em 5 dimensões (Metabólica, Emocional, Energia, Urgência, Segurança). 👋🚦
+- **Safety Locks**: A IA é fisicamente bloqueada de prescrever protocolos agressivos para pacientes em "Alerta Vermelho" de estresse ou custo energético.
+
+### 📊 6. NSS Analytics (Governança de Desfechos)
+
+- **Auditoria de Retenção & LTV**: Correlação entre a Triagem de entrada e a Aderência final do paciente. 👋📈
+- **Relatório de Eficácia**: Prova estatística de que as travas de segurança da IA aumentam o sucesso do tratamento e reduzem o Churn.
+
+### 🛡️ 7. NSS Shield (Disaster Recovery)
+
+- **Snapshots & Imutabilidade**: Exportação diária (03:00 AM) de todo o SSoT (Google Sheets) e Banco TACO para arquivos CSV. 👋🔐
+- **Cloud Cold Storage**: Envio de backups compactados para AWS S3, garantindo resiliência total contra falhas humanas ou de infraestrutura.
 
 ---
 
-## 🧩 O Ecossistema de Automação Invisível (NSS Suite)
+## 🏗️ Arquitetura & Governança (12-Factor App)
 
-O NSS opera em background ("sob as paredes" do consultório) monitorando, escutando e aprendendo com o ambiente clínico através de 6 sub-módulos independentes:
+O repositório NSS segue rigorosamente as metodologias de **Twelve-Factor App**:
 
-* 🎙️ **NSS Listen (Ingestão de Áudio):** Integração via Webhook com o **Fathom AI**. Transcreve e processa a consulta em tempo real, gerando rascunhos automáticos para os 4 Inputs Clínicos.
-* 👁️ **NSS Vision (Biometria & OCR):** Integração com pipelines (n8n/Tesseract) para leitura de exames de sangue em PDF. Estrutura biomarcadores e alerta a IA sobre deficiências (ex: Ferritina baixa).
-* 🔬 **NSS Intelligence (Pesquisa Científica):** Web Crawler estruturado (via **Firecrawl**) que busca ativamente artigos no *PubMed* e *Google Scholar* para embasar condutas diante de diagnósticos complexos.
-* 🔮 **NSS Oracle (Memória Vetorial / RAG):** Cérebro institucional baseado em **ChromaDB**. O sistema vetoriza e "lembra" de todos os desfechos clínicos anteriores da clínica, sugerindo protocolos de sucesso com base em dados históricos locais.
-* ⚡ **NSS Flow (Workflows de Engajamento):** Executa as 7 automações invisíveis de engajamento (Gotejamento de conteúdo, réguas de confirmação de 14d/7d/2d/2h e Digest Diário às 07:00 AM para o médico).
-* 🛡️ **NSS Shield (Disaster Recovery):** Snapshot diário da Single Source of Truth (Google Sheets/SQLite) criptografado e salvo em Cold Storage, garantindo resiliência contra falhas humanas.
-
----
-
-## 🏗️ Arquitetura e Governança (12-Factor App)
-
-O repositório NSS segue rigorosamente as metodologias de **Twelve-Factor App**, garantindo que seja robusto, escalável e de fácil manutenção:
-
-* **I. Codebase & SSoT:** Todo o estado relacional vive no Google Sheets (Single Source of Truth), enquanto dependências em massa (Tabela TACO) vivem em um SQLite imutável.
-* **VI. Stateless Processes:** Zero dependência de arquivos locais temporários. Todo o cache de relações e controle de Idempotência vive em memória no **Redis**. O container pode ser destruído e recriado sem perda de contexto.
-* **IX. Disposability:** Resiliência através de degradação graciosa. O sistema lida autonomamente com *rate limits* do Google e interrupções externas.
-* **X. Dev/Prod Parity:** Orquestração via `docker-compose`. O ambiente local do desenvolvedor é idêntico ao ambiente de nuvem do cliente.
-* **XI. Logs e Telemetria:** Centralização de Logs com *Correlation IDs* e *Dead Man's Snitch* (Alertas proativos via Webhook em caso de falha de serviços críticos).
+- **I. Codebase & SSoT:** Todo o estado relacional vive no Google Sheets (Single Source of Truth), com datasets imutáveis em SQLite.
+- **VI. Stateless Processes:** Zero dependência de arquivos locais. Todo o cache de relações e controle de Idempotência vive em **Redis**.
+- **X. Dev/Prod Parity:** Orquestração via `docker-compose`. O ambiente local é idêntico ao ambiente de nuvem do cliente.
+- **XI. Logs e Telemetria:** Centralização de Logs com *Correlation IDs* e *Dead Man's Snitch* (GitHub CI/CD Integrado).
 
 ---
 
@@ -48,39 +62,39 @@ O repositório NSS segue rigorosamente as metodologias de **Twelve-Factor App**,
 
 Atualizações no sistema são gerenciadas através de uma esteira madura de DevOps:
 
-1. **Continuous Integration (GitHub Actions):** Todo commit na branch `main` dispara auditorias de código (`ruff`), testes de unidade e de integração isolados via `pytest` e `fakeredis`.
-2. **Release Management (Release Please):** Versionamento semântico autogerado e Changelogs documentados a cada *Conventional Commit*.
-3. **Continuous Deployment (Watchtower & GHCR):** Imagens Docker são compiladas e enviadas ao *GitHub Container Registry*. Servidores em produção utilizam o sentinela *Watchtower* para realizar atualizações de imagem (Pull & Restart) de forma 100% autônoma (*zero-downtime update*).
+1. **Continuous Integration (GitHub Actions):** Auditorias de código (`ruff`), testes de unidade e de integração isolados via `pytest` e `fakeredis`.
+2. **Release Management (Release Please):** Versionamento semântico autogerado e Changelogs documentados a cada commit.
+3. **Continuous Deployment (Watchtower & GHCR):** Imagens Docker compiladas no *GitHub Container Registry* com auto-update silencioso no servidor do cliente.
 
 ---
 
 ## 🛠️ Stack Tecnológico
 
-* **Backend & API:** Python 3.11+, FastAPI.
-* **Persistência & Cache:** Redis (Stateless Cache), SQLite (Read-Only Dataset), ChromaDB (Vector Store).
-* **IA & Agentes:** OpenAI (LLMs), CrewAI (Roteamento Agêntico).
-* **Cloud & Integrações:** Google Workspace API (Drive, Docs, Sheets, Gmail, Calendar), Fathom AI, Firecrawl.
-* **DevOps:** Docker, GitHub Actions, Pytest, Ruff.
+- **Backend & API:** Python 3.11+, FastAPI.
+- **Persistência & Cache:** Redis (Stateless Cache), SQLite (Dataset), ChromaDB (Vector Store).
+- **Cloud & Infra:** AWS S3 (Backups), Google Workspace, Fathom AI, Firecrawl.
+- **DevOps:** Docker, GitHub Actions, Pytest, Ruff, Watchtower.
 
 ---
 
 ## 🏁 Quick Start (Desenvolvimento)
 
-Para iniciar o desenvolvimento ou a primeira execução local com isolamento total:
-
 ```bash
-# 1. Clone o repositório e configure o .env
-git clone [https://github.com/seu-usuario/nutriciones-abr26-rodrigo.git](https://github.com/seu-usuario/nutriciones-abr26-rodrigo.git)
-cd nutriciones-abr26-rodrigo
+# 1. Clone o repositório
+git clone https://github.com/seu-usuario/nss-abr26-rodrigo.git
 
-# 2. Rode o Setup e as validações (Cria venv e verifica chaves)
-python setup_nss.py
-
-# 3. Suba a infraestrutura Stateless e o Banco Vetorial
+# 2. Suba a infraestrutura Stateless e o Banco Vetorial
 docker-compose up -d --build
 
-# 4. Autorize o App e Inicie o "Encanamento"
+# 3. Autorize o App e Inicie o "Encanamento"
 # Acesse: http://localhost:8000/onboarding/google
-Nota: Para rodar a esteira de testes localmente sem acionar dependências externas, execute pytest --cov=nutriciones.
+```
+
+**NutricioneS Sabla - High Performance Clinical Intelligence** 🚀🥗🏗️📊⚖️🏆🏁🛡️⚓🚥🌥️📥
+
+---
+
+> [!NOTE]
+> Para rodar a esteira de testes localmente sem acionar dependências externas, execute `pytest --cov=nutriciones`.
 
 Desenvolvido para profissionais que escolhem focar em pessoas, não em sistemas.

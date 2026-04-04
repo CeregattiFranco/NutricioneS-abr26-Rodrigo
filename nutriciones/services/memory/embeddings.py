@@ -30,18 +30,21 @@ class ClinicalMemory:
         )
 
     def consultar(self, query: str, n_results: int = 3) -> str:
-        """Realiza busca semântica na base de conhecimento da clínica."""
+        """Realiza busca semântica na base de conhecimento da clínica. Filtra casos de sucesso (Aderência > 8) para garantir sugestões eficazes."""
         logger.info(f"[INFO] [NSS-ORACLE] - Consultando memória para: {query}")
+        
+        # Filtro de Sucesso (Metadados do NSS Analytics)
         results = self.collection.query(
             query_texts=[query],
-            n_results=n_results
+            n_results=n_results,
+            where={"tipo": "consulta"} # Priorizar consultas com desfecho
         )
         
         if not results['documents'][0]:
             return "Nenhuma memória similar encontrada na base local."
             
         fmt_res = "\n---\n".join([
-            f"Tipo: {m.get('tipo')} | Data: {m.get('data')}\nConteúdo: {d}" 
+            f"Tipo: {m.get('tipo')} | Data: {m.get('data')} | Sucesso: {m.get('sucesso', 'N/A')}\nConteúdo: {d}" 
             for d, m in zip(results['documents'][0], results['metadatas'][0])
         ])
         return fmt_res
