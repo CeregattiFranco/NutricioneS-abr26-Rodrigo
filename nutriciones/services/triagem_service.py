@@ -2,6 +2,7 @@ import logging
 from typing import Dict, Any
 from nutriciones.models.triagem import TriagemPerfil
 from nutriciones.models.primary_key import PrimaryKey
+import uuid
 from nutriciones.core import get_base_logger
 
 logger = get_base_logger("NSS-TRIAGE")
@@ -43,7 +44,7 @@ def processar_respostas_triage(pct_id: str, respostas: Dict[str, Any]) -> Triage
     dominante_final = f"{status}_{bloco_dominante}"
 
     return TriagemPerfil(
-        tri_id=PrimaryKey.generate("TRI"),
+        tri_id=f"TRI_{uuid.uuid4().hex[:7]}",
         pct_id=pct_id,
         score_metabolico=m,
         score_comportamental=b,

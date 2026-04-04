@@ -1,4 +1,6 @@
 import requests
+from nutriciones.core import config, get_base_logger
+
 logger = get_base_logger("NSS-FATHOM")
 
 class FathomClient:
@@ -25,7 +27,7 @@ import uuid
 import json
 from nutriciones.models.fathom import FathomCall
 from nutriciones.models.rascunhos import RascunhoClinico
-from nutriciones.services.google.sheets.base import inserir_lista_recursos, sheet_name_of_resource_type, listar_recursos
+from nutriciones.services.google.sheets.base import inserir_lista_recursos, sheet_name_of_resource_type, listar_recursos, PedidoInsercaoListaRecursos
 from nutriciones.services.google.sheets.types import PedidoListagemRecursos
 from nutriciones.services.google.sheets.indices import get_indices, refresh_indices
 from nutriciones.services.pacientes import generic_serializer

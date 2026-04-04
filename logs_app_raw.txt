@@ -1,0 +1,63 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]
+Loading weights: 100%|??????????????????????????????| 103/103 [00:00<00:00, 1113.82it/s]
+[1mBertModel LOAD REPORT[0m from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  | 
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Traceback (most recent call last):
+  File "/app/main_api.py", line 307, in <module>
+    from nutriciones.services.analytics import nss_analytics
+  File "/app/nutriciones/services/analytics.py", line 5, in <module>
+    from nutriciones.models.triagem import TriagemPaciente
+ImportError: cannot import name 'TriagemPaciente' from 'nutriciones.models.triagem' (/app/nutriciones/models/triagem.py)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]
+Loading weights: 100%|??????????????????????????????| 103/103 [00:00<00:00, 1156.17it/s]
+[1mBertModel LOAD REPORT[0m from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  | 
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Traceback (most recent call last):
+  File "/app/main_api.py", line 307, in <module>
+    from nutriciones.services.analytics import nss_analytics
+  File "/app/nutriciones/services/analytics.py", line 5, in <module>
+    from nutriciones.models.triagem import TriagemPaciente
+ImportError: cannot import name 'TriagemPaciente' from 'nutriciones.models.triagem' (/app/nutriciones/models/triagem.py)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]
+Loading weights: 100%|??????????????????????????????| 103/103 [00:00<00:00, 1260.58it/s]
+[1mBertModel LOAD REPORT[0m from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  | 
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Traceback (most recent call last):
+  File "/app/main_api.py", line 307, in <module>
+    from nutriciones.services.analytics import nss_analytics
+  File "/app/nutriciones/services/analytics.py", line 5, in <module>
+    from nutriciones.models.triagem import TriagemPaciente
+ImportError: cannot import name 'TriagemPaciente' from 'nutriciones.models.triagem' (/app/nutriciones/models/triagem.py)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]
+Loading weights:  73%|????????????????????????  | 75/103 [00:00<00:00, 745.60it/s]
+Loading weights: 100%|??????????????????????????????| 103/103 [00:00<00:00, 830.41it/s]
+[1mBertModel LOAD REPORT[0m from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  | 
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.

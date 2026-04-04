@@ -38,7 +38,15 @@ def google_onboarding():
     """Inicia o fluxo de consentimento do Google."""
     logger.info("Iniciando redirecionamento para Google OAuth Consent.")
     flow = get_auth_flow(redirect_uri=f"{BASE_URL}/onboarding/google/callback")
-    auth_url, _ = flow.authorization_url(prompt='consent', access_type='offline')
+    
+    # PKCE: O Flow do Google gera um code_verifier automaticamente
+    auth_url, state = flow.authorization_url(prompt='consent', access_type='offline')
+    
+    # Salvar o code_verifier no Redis vinculado ao state para recuperar no callback (Stateless - Fator VI)
+    r = get_indices().redis_client
+    if r:
+        r.set(f"nss:auth:state:{state}", flow.code_verifier, ex=600) # Expira em 10 min
+    
     return RedirectResponse(auth_url)
 
 @app.get("/onboarding/google/callback")
@@ -46,11 +54,21 @@ def google_callback(request: Request, background_tasks: BackgroundTasks):
     """Recebe o callback do Google, troca pelo token e inicializa os índices."""
     logger.info("Callback do Google recebido. Processando código de autorização.")
     code = request.query_params.get("code")
+    state = request.query_params.get("state")
     if not code:
         logger.error("Código de autorização ausente no callback.")
         return {"error": "Código de autorização não recebido."}
         
     flow = get_auth_flow(redirect_uri=f"{BASE_URL}/onboarding/google/callback")
+    
+    # Recuperar code_verifier do Redis para satisfazer o PKCE
+    r = get_indices().redis_client
+    if r and state:
+        code_verifier = r.get(f"nss:auth:state:{state}")
+        if code_verifier:
+            # Em versões recentes, o Flow espera que você defina o verifier se for manual
+            flow.code_verifier = code_verifier if isinstance(code_verifier, str) else code_verifier.decode()
+    
     flow.fetch_token(code=code)
     
     creds = flow.credentials
@@ -68,7 +86,7 @@ def google_callback(request: Request, background_tasks: BackgroundTasks):
 from nutriciones.services.biometrics import extrair_historico_clinico, calcular_gap_objetivo
 
 import uuid
-from typing import List
+from typing import List, Dict
 from pydantic import BaseModel
 
 class ExameInput(BaseModel):
@@ -87,7 +105,7 @@ async def webhook_ocr_exames(exames: List[ExameInput], background_tasks: Backgro
     logger.info(f"Recebido Webhook OCR com {len(exames)} parâmetros laboratoriais.")
     
     from nutriciones.models.biometria import ExameLaboratorial
-    from nutriciones.services.google.sheets.base import inserir_lista_recursos, sheet_name_of_resource_type
+    from nutriciones.services.google.sheets.base import inserir_lista_recursos, sheet_name_of_resource_type, PedidoInsercaoListaRecursos
     from nutriciones.services.pacientes import generic_serializer
     
     novos_exames = []
@@ -153,8 +171,9 @@ async def processar_rascunho_fathom(call_id: str):
         
         # Simulando sugestão estruturada da IA
         from nutriciones.models.rascunhos import RascunhoClinico
-        from nutriciones.services.google.sheets.base import inserir_lista_recursos, sheet_name_of_resource_type
+        from nutriciones.services.google.sheets.base import inserir_lista_recursos, sheet_name_of_resource_type, PedidoInsercaoListaRecursos
         from nutriciones.services.pacientes import generic_serializer
+        from datetime import datetime
         
         rascunho = RascunhoClinico(
             ras_id=uuid.uuid4().hex[:10],

@@ -2,7 +2,7 @@ import logging
 from typing import Dict, List, Any
 from nutriciones.services.google.sheets.indices import get_indices
 from nutriciones.models.outcomes import DesfechoClinico
-from nutriciones.models.triagem import TriagemPaciente
+from nutriciones.models.triagem import TriagemPerfil
 from nutriciones.core import get_base_logger
 
 logger = get_base_logger("NSS-ANALYTICS")

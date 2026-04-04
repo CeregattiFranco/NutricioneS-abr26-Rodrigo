@@ -1,0 +1,21 @@
+.git
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+*.sqlite
+indices.bin
+token.json
+logs/
+data/
+*.bin
+*.md
+Dockerfile
+docker-compose.yml
+.env
+# Keep requirements.txt specifically
+!requirements.txt
+# No more wildcard txt if it's causing issues, or place it before
+# Let's just list explicitly what we don't want or be safer.
+logs_app.txt
+logs_app_raw.txt
