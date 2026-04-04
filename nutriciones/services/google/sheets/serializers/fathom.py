@@ -1,37 +1,20 @@
-import logging
-from typing import Sequence, Optional
-from datetime import datetime
-
+from dataclasses import astuple
+from typing import Sequence
 from nutriciones.models.fathom import FathomCall
 from nutriciones.services.google.sheets.types import Either
 
-def _parse_datetime(dt_str: str) -> datetime:
-    try: return datetime.fromisoformat(dt_str)
-    except: return datetime.now()
+def serialize_fathom_call(call: FathomCall) -> list:
+    """Converte um objeto FathomCall em uma linha para o Google Sheets (40 colunas)."""
+    return list(astuple(call))
 
-def serialize_fathom_call(call: FathomCall) -> Sequence[str]:
-    return [
-        call.fth_id,
-        call.cns_id or "",
-        call.fathom_call_id,
-        call.summary_status,
-        call.transcript_url,
-        call.processed_at.isoformat() if call.processed_at else "",
-        call.created_at.isoformat(),
-        call.updated_at.isoformat()
-    ]
-
-def deserialize_fathom_call(row: Sequence[str]) -> Either[FathomCall, ValueError]:
+def deserialize_fathom_call(row: Sequence[str]) -> Either[FathomCall, Exception]:
+    """Converte uma linha do Google Sheets em um objeto FathomCall."""
     try:
-        return FathomCall(
-            fth_id=row[0],
-            cns_id=row[1] if row[1] else None,
-            fathom_call_id=row[2],
-            summary_status=row[3],
-            transcript_url=row[4],
-            processed_at=_parse_datetime(row[5]) if row[5] else None,
-            created_at=_parse_datetime(row[6]),
-            updated_at=_parse_datetime(row[7])
-        ), None
+        # Preenche com strings vazias se o Sheets omitiu colunas em branco no final
+        row_list = list(row)
+        while len(row_list) < 40:
+            row_list.append("")
+        
+        return FathomCall(*row_list[:40]), None
     except Exception as e:
-        return None, ValueError(str(e))
+        return None, e

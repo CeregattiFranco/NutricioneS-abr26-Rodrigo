@@ -58,16 +58,18 @@ def get_creds() -> OAuthCreds:
     if r:
         token_json = r.get("nss:google:token")
         if token_json:
-            logger.info("Credenciais OAuth recuperadas do Redis (Stateless).")
+            logger.info("[✔] Token Google recuperado do Redis.")
             token_data = json.loads(token_json)
             creds = OAuthCreds.from_authorized_user_info(token_data, SCOPES)
+        else:
+            logger.warning("[!] Chave 'nss:google:token' NÃO encontrada no Redis.")
 
     # 2. Fallback para token.json local
     if not creds:
         token_path = config.BASE_DIR / 'token.json'
         if token_path.exists():
-            logger.info("Credenciais OAuth carregadas do token.json local.")
-            creds = OAuthCreds.from_authorized_user_file(str(token_path), SCOPES)
+            logger.info("[✔] Token Google carregado de arquivo local.")
+            creds = OAuthCreds.from_authorized_user_info(json.loads(token_path.read_text()), SCOPES)
 
     if creds:
         if not creds.expired:
@@ -75,17 +77,18 @@ def get_creds() -> OAuthCreds:
             return creds
         elif creds.refresh_token:
             try:
+                logger.info("[*] Token expirado. Tentando refresh...")
                 creds.refresh(Request())
                 _creds = creds
                 # Atualizar Redis após refresh
                 if r:
                     r.set("nss:google:token", creds.to_json())
-                logger.info("Credenciais OAuth atualizadas via Refresh Token.")
+                logger.info("[✔] Token Google atualizado com Refresh Token.")
                 return creds
             except Exception as e:
-                logger.warning(f"Erro no refresh token: {e}")
+                logger.warning(f"[X] Erro no refresh: {e}")
 
-    logger.warning("Nenhuma credencial válida encontrada. Inicie o Onboarding via API /onboarding/google.")
+    logger.warning("[!] Nenhuma credencial Google ativa. Onboarding necessário.")
     return None
 
 def get_auth_flow(redirect_uri: str) -> Flow:
@@ -119,7 +122,14 @@ def save_token(token_json: str):
 def get_ssot_sheets_service():
     """Retorna o client (service) da API do Google Sheets (v4) autenticado."""
     creds = get_creds()
-    return build('sheets', 'v4', credentials=creds)
+    if not creds:
+        logger.error("[!] Não é possível criar o serviço do Google Sheets: Credenciais ausentes.")
+        return None
+    try:
+        return build('sheets', 'v4', credentials=creds)
+    except Exception as e:
+        logger.error(f"[X] Falha ao construir o serviço do Google: {e}")
+        return None
 
 def get_drive_service():
     """Retorna o client (service) da API do Google Drive (v3) autenticado."""

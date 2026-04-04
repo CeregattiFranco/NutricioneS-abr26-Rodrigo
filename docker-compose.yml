@@ -18,6 +18,10 @@ services:
       - ./credentials.json:/app/credentials.json
       - ./data:/app/data
       - ./logs:/app/logs
+      - ./scripts:/app/scripts
+      - ./nutriciones:/app/nutriciones
+      - ./main_api.py:/app/main_api.py
+      - ./token.json:/app/token.json
 
   watchtower:
     image: containrrr/watchtower

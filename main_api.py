@@ -33,6 +33,15 @@ def home():
     logger.info("Acesso à Home da API.")
     return {"status": "online", "message": "NutricioneS Sabla API is running."}
 
+@app.get("/debug/redis")
+def debug_redis():
+    """Endpoint temporário para debug de estado no Redis."""
+    r = get_indices().redis_client
+    if not r:
+        return {"error": "Redis não conectado"}
+    keys = r.keys("*")
+    return {"keys": keys, "redis_url": config.REDIS_URL}
+
 @app.get("/onboarding/google")
 def google_onboarding():
     """Inicia o fluxo de consentimento do Google."""
@@ -69,10 +78,14 @@ def google_callback(request: Request, background_tasks: BackgroundTasks):
             # Em versões recentes, o Flow espera que você defina o verifier se for manual
             flow.code_verifier = code_verifier if isinstance(code_verifier, str) else code_verifier.decode()
     
-    flow.fetch_token(code=code)
-    
-    creds = flow.credentials
-    save_token(creds.to_json())
+    try:
+        flow.fetch_token(code=code)
+        creds = flow.credentials
+        save_token(creds.to_json())
+        logger.info(f"[✔] Token Google persistido via callback. Redis: {config.REDIS_URL}")
+    except Exception as e:
+        logger.error(f"[X] ERRO ao processar token no callback: {e}")
+        return {"error": "Falha no processamento do token."}
     
     # Disparar refresh de índices em background
     logger.info("Autenticação concluída. Disparando refresh de índices em background.")

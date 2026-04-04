@@ -1,16 +1,50 @@
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Optional
 
-from nutriciones.models.primary_key import PrimaryKey, WithPrimaryKeyProperty
+@dataclass
+class FathomCall:
+    """Modelo de dados de uma chamada do Fathom AI (40 colunas)."""
+    title: str = ""
+    meeting_title: str = ""
+    url: str = ""
+    share_url: str = ""
+    recording_id: str = ""
+    created_at: str = ""
+    scheduled_start_time: str = ""
+    scheduled_end_time: str = ""
+    recording_start_time: str = ""
+    recording_end_time: str = ""
+    calendar_invitees_domains_type: str = ""
+    transcript_language: str = ""
+    transcript: str = ""
+    default_summary: str = ""
+    action_items: str = ""
+    crm_matches: str = ""
+    recorded_by_name: str = ""
+    recorded_by_email: str = ""
+    recorded_by_email_domain: str = ""
+    recorded_by_team: str = ""
+    invitee_1_name: str = ""
+    invitee_1_email: str = ""
+    invitee_1_email_domain: str = ""
+    invitee_1_is_external: str = ""
+    invitee_1_matched_speaker_display_name: str = ""
+    invitee_2_name: str = ""
+    invitee_2_email: str = ""
+    invitee_2_email_domain: str = ""
+    invitee_2_is_external: str = ""
+    invitee_2_matched_speaker_display_name: str = ""
+    invitees_extra: str = ""
+    invitee_3_name: str = ""
+    invitee_3_email: str = ""
+    invitee_3_email_domain: str = ""
+    invitee_3_is_external: str = ""
+    invitee_3_matched_speaker_display_name: str = ""
+    summary_template_name: str = ""
+    summary_markdown: str = ""
+    summary_fetch_status: str = ""
+    summary_markdown_pt_br: str = ""
 
-@dataclass(frozen=True)
-class FathomCall(WithPrimaryKeyProperty):
-    fth_id: PrimaryKey
-    cns_id: Optional[str] # FK da Consulta (se encontrado)
-    fathom_call_id: str # ID externo do Fathom
-    summary_status: str # Ex: "ready", "processing"
-    transcript_url: str
-    processed_at: Optional[datetime] = None
-    created_at: datetime = datetime.now()
-    updated_at: datetime = datetime.now()
+    @property
+    def pk(self) -> str:
+        """Chave primária para indexação."""
+        return str(self.recording_id)

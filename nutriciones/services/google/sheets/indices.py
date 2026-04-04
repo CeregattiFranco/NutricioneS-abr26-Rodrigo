@@ -13,6 +13,8 @@ from nutriciones.models.prontuario import Prontuario
 from nutriciones.models.mensagens import Mensagem
 from nutriciones.models.biometria import ExameLaboratorial
 from nutriciones.models.rascunhos import RascunhoClinico
+from nutriciones.models.fathom import FathomCall
+from nutriciones.models.triagem import TriagemPerfil
 from nutriciones.models.primary_key import HasPrimaryKey
 from nutriciones.services import google
 from nutriciones.services.google.sheets.types import Either, SheetRange
@@ -38,6 +40,7 @@ _relationships: dict[Sheet, list[tuple[Sheet, SheetColumnStr]]] = {
     Mensagem: [(Paciente, "B")],
     ExameLaboratorial: [(Paciente, "B")],
     RascunhoClinico: [(Paciente, "C"), (Consulta, "B")],
+    FathomCall: [],
 }
 
 class IndicesStateless:
@@ -146,11 +149,14 @@ def refresh_indices(sheet_id: str = core.config.GoogleServices.sheet_id_cardapio
         )
         from nutriciones.services.google.sheets.serializers.dieta import deserialize_plano
 
+        from nutriciones.services.google.sheets.serializers.fathom import deserialize_fathom_call
+
         serializers = {
             Paciente: deserialize_paciente, PacienteTelefone: deserialize_telefone,
             PacienteEmail: deserialize_email, PacienteEndereco: deserialize_endereco,
             Consulta: deserialize_consulta, PlanoAlimentar: deserialize_plano,
             Prontuario: deserialize_prontuario, Mensagem: deserialize_mensagem,
+            FathomCall: deserialize_fathom_call,
             Agenda: lambda r: (Agenda(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]), None) # placeholder logic
         }
 

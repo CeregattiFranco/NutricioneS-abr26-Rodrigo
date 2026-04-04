@@ -8,7 +8,7 @@ LABEL project="Sabla - Automação Clínica"
 # Configurações de Ambiente
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-ENV GOOGLE_APPLICATION_CREDENTIALS /app/credentials.json
+# ENV GOOGLE_APPLICATION_CREDENTIALS /app/credentials.json
 
 # Diretório de Trabalho
 WORKDIR /app
